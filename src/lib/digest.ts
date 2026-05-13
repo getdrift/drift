@@ -40,8 +40,10 @@ export async function getCompetitor(
       args: [workspaceId, idOrDomain],
     });
   } else {
+    // Case-insensitive match on domain or name so CLI selectors like
+    // "linear" find a competitor stored as "Linear".
     r = await client.execute({
-      sql: "SELECT * FROM competitors WHERE workspace_id = ? AND (domain = ? OR name = ?)",
+      sql: "SELECT * FROM competitors WHERE workspace_id = ? AND (lower(domain) = lower(?) OR lower(name) = lower(?))",
       args: [workspaceId, idOrDomain, idOrDomain],
     });
   }

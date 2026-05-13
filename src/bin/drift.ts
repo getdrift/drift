@@ -498,7 +498,22 @@ async function cmdSeed(args: string[]) {
   }
 }
 
-function printDigest(d: { id: number; urgency: string; body: { summary: string; key_changes: string[]; strategic_signals: string[]; recommended_actions: string[] }; period_start: string; period_end: string }, name: string) {
+function printDigest(
+  d: {
+    id: number;
+    urgency: string;
+    body: {
+      summary: string;
+      key_changes: string[];
+      strategic_signals: string[];
+      recommended_actions: string[];
+      hiring_signals?: string[];
+    };
+    period_start: string;
+    period_end: string;
+  },
+  name: string,
+) {
   const bar = "─".repeat(60);
   console.log(`\n${bar}`);
   console.log(` DIGEST #${d.id}  ${name}  [${d.urgency.toUpperCase()}]`);
@@ -506,6 +521,7 @@ function printDigest(d: { id: number; urgency: string; body: { summary: string; 
   console.log(bar);
   console.log(`\n${d.body.summary}\n`);
   section("KEY CHANGES", d.body.key_changes);
+  section("HIRING SIGNALS", d.body.hiring_signals ?? []);
   section("STRATEGIC SIGNALS", d.body.strategic_signals);
   section("RECOMMENDED ACTIONS", d.body.recommended_actions);
 }

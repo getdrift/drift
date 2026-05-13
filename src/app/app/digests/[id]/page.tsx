@@ -48,6 +48,17 @@ export default async function DigestPage({
           </>
         ) : null}
 
+        {digest.body.hiring_signals && digest.body.hiring_signals.length > 0 ? (
+          <>
+            <h2>Hiring signals</h2>
+            <ul>
+              {digest.body.hiring_signals.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+
         {digest.body.strategic_signals.length > 0 ? (
           <>
             <h2>Strategic signals</h2>
