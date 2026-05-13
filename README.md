@@ -1,14 +1,14 @@
 # drift
 
-Weekly competitive intel for B2B SaaS founders. You give it 3–15 competitors and the URLs you'd otherwise check yourself (pricing, changelog, jobs, blog). It scrapes them, diffs the snapshots against last week, and uses Gemini to write a brief that tells you what actually moved — and what you should consider doing about it.
+Weekly competitive intel for B2B SaaS founders. You give it 3–15 competitors and the URLs you'd otherwise check yourself (pricing, changelog, jobs, blog). It scrapes them, diffs the snapshots against last week, and uses an advanced AI model to write a brief that tells you what actually moved — and what you should consider doing about it.
 
-**Zero-cost stack.** Gemini 2.5 Flash free tier (1,500 req/day, no card) + Vercel free hosting + Node 24's built-in `node:sqlite`. You can run the entire thing without paying anyone.
+**Zero-cost stack.** Free AI inference (Gemini 2.5 Flash's 1,500 req/day tier, no card) + Vercel free hosting + Node 24's built-in `node:sqlite`. You can run the entire thing without paying anyone. Swap the model provider via a single env var.
 
 ## What it does
 
 - **Scrapes** pricing, changelog, blog, jobs, docs, homepage pages. Handles JS-rendered sites (Next.js, Remix, Apollo, TanStack) by extracting content from hydration JSON islands, not just visible DOM.
 - **Snapshots** each fetch in SQLite with a content hash — only stores actual diffs as history compounds.
-- **Synthesizes** with Gemini — filters out noise (rotating testimonials, footer dates), surfaces signal (price changes, new tiers, hiring patterns, deprecations, repositioning), and connects dots across sources.
+- **Synthesizes** with an advanced AI model (Gemini 2.5 Flash by default) — filters out noise (rotating testimonials, footer dates), surfaces signal (price changes, new tiers, hiring patterns, deprecations, repositioning), and connects dots across sources.
 - **Delivers** to email (Resend), Slack, Discord, or any generic webhook. Each digest has `summary`, `key_changes`, `strategic_signals`, `recommended_actions`, and an `urgency` rating.
 - **Schedules** itself via Vercel Cron or any cron runner — weekly auto-fetch + auto-digest + auto-deliver.
 

@@ -107,7 +107,7 @@ export default async function Image() {
             fontFamily: "ui-monospace, monospace",
           }}
         >
-          built on gemini · self-hostable · MIT
+          AI-powered · self-hostable · MIT
         </div>
       </div>
     ),

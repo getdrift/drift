@@ -137,7 +137,7 @@ export default async function PublicBrief() {
         >
           Hosted is launching once there's enough demand — drop in for $19/mo
           and we run the infra. Or self-host today: it's MIT-licensed, runs on
-          any machine (even a $35 Raspberry Pi), and uses Gemini's free tier.
+          any machine (even a $35 Raspberry Pi), with AI inference on a free tier.
         </p>
         <div className="hero-cta" style={{ justifyContent: "center" }}>
           <a href="/waitlist?plan=pro" className="btn btn-primary">

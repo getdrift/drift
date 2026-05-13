@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Drift — Weekly competitive intel for B2B SaaS",
   description:
-    "Drift watches every competitor page that matters — pricing, changelog, jobs. Every Monday, a Gemini-written brief lands in your inbox: what changed, what it means, what to do about it.",
+    "Drift watches every competitor page that matters — pricing, changelog, jobs. Every Monday, an AI-written brief lands in your inbox: what changed, what it means, what to do about it.",
   keywords: [
     "competitive intelligence",
     "competitor monitoring",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "changelog tracker",
     "weekly digest",
     "B2B",
-    "Gemini",
+    "AI brief",
   ],
   authors: [{ name: "Drift" }],
   creator: "Drift",
@@ -70,7 +70,7 @@ export default async function RootLayout({
       "@type": "SoftwareApplication",
       name: "Drift",
       description:
-        "Drift watches your competitors' pricing, changelog, jobs, and blog pages. Every Monday, a Gemini-written brief lands in your inbox: what changed, what it means, what to do.",
+        "Drift watches your competitors' pricing, changelog, jobs, and blog pages. Every Monday, an AI-written brief lands in your inbox: what changed, what it means, what to do.",
       url: SITE_URL,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Any",
@@ -101,7 +101,7 @@ export default async function RootLayout({
         "Competitor pricing tracking",
         "Changelog monitoring",
         "Hiring-signal analysis",
-        "Weekly Gemini-written brief",
+        "Weekly AI-written brief",
         "Email, Slack, Discord, webhook delivery",
         "Self-hostable on a Raspberry Pi",
       ],

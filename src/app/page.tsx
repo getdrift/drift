@@ -35,7 +35,7 @@ export default async function Landing() {
         </h1>
         <p className="hero-sub">
           Drift watches every page that matters — pricing, changelog, jobs, blog.
-          Every Monday, a Gemini-written brief lands in your inbox: what changed,
+          Every Monday, an AI-written brief lands in your inbox: what changed,
           what it means, what you should consider doing about it.
         </p>
         <div className="hero-cta">
@@ -121,7 +121,7 @@ export default async function Landing() {
           <div className="feature-icon">$</div>
           <h3>Free forever for solo</h3>
           <p>
-            1,500 Gemini calls/day free. Vercel free hosting. Resend free emails.
+            Free AI inference at our scale. Vercel free hosting. Resend free emails.
             You can run Drift without ever paying anyone.
           </p>
         </div>
@@ -150,7 +150,7 @@ export default async function Landing() {
             <div className="step-num">3</div>
             <h4>The brief lands</h4>
             <p>
-              Gemini diffs old vs new and writes a 5-bullet brief — what changed,
+              An advanced AI model diffs old vs new and writes a 5-bullet brief — what changed,
               what it implies, what to consider doing. In your inbox.
             </p>
           </div>
@@ -171,7 +171,7 @@ export default async function Landing() {
               <li>Unlimited competitors</li>
               <li>Unlimited weekly digests</li>
               <li>All delivery channels</li>
-              <li>Your Gemini key (free tier covers it)</li>
+              <li>Your AI provider key (free tier covers it)</li>
               <li>Your data, your hardware</li>
             </ul>
             <a href="https://github.com/getdrift/drift" className="btn btn-secondary plan-cta">
