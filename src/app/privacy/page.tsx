@@ -4,8 +4,8 @@ export const dynamic = "force-static";
 
 const SITE_URL = process.env.PUBLIC_URL ?? "https://drift.gibbon-brill.ts.net";
 const LAST_UPDATED = "May 13, 2026";
-const LEGAL_NAME = "[YOUR FULL LEGAL NAME]";
-const BUSINESS_ADDRESS = "[BUSINESS POSTAL ADDRESS]";
+const LEGAL_NAME = "Francis Jego";
+const BUSINESS_ADDRESS = "Hammergut 14, 6330 Cham, Switzerland";
 const CONTACT_EMAIL = "scriptsswiss@gmail.com";
 
 export const metadata: Metadata = {

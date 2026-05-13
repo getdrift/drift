@@ -4,8 +4,8 @@ export const dynamic = "force-static";
 
 const SITE_URL = process.env.PUBLIC_URL ?? "https://drift.gibbon-brill.ts.net";
 const LAST_UPDATED = "May 13, 2026";
-const LEGAL_NAME = "[YOUR FULL LEGAL NAME]";
-const BUSINESS_ADDRESS = "[BUSINESS POSTAL ADDRESS]";
+const LEGAL_NAME = "Francis Jego";
+const BUSINESS_ADDRESS = "Hammergut 14, 6330 Cham, Switzerland";
 const CONTACT_EMAIL = "scriptsswiss@gmail.com";
 
 export const metadata: Metadata = {
@@ -29,9 +29,9 @@ export default function Terms() {
         <h2>1. Who we are</h2>
         <p>
           Drift (&quot;Drift&quot;, &quot;we&quot;, &quot;us&quot;) is a software service
-          operated by {LEGAL_NAME}, a sole proprietorship registered in
-          Switzerland with its registered postal address at {BUSINESS_ADDRESS}.
-          You can reach us at <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+          operated by {LEGAL_NAME} as a sole proprietor under Swiss law, with
+          postal address at {BUSINESS_ADDRESS}. You can reach us at{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
         </p>
 
         <h2>2. What Drift does</h2>
