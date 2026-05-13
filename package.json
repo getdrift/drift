@@ -1,0 +1,30 @@
+{
+  "name": "drift",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Weekly competitive intel — scrape, diff, synthesize.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "drift": "tsx src/bin/drift.ts",
+    "init-db": "tsx src/bin/drift.ts init-db",
+    "seed": "tsx src/bin/drift.ts seed",
+    "cron": "tsx src/bin/cron.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
