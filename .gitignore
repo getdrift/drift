@@ -11,6 +11,7 @@ data/
 dist
 build
 .tsbuildinfo
+*.tsbuildinfo
 next-env.d.ts
 dev.log
 .vercel
