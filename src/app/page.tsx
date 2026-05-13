@@ -1,10 +1,13 @@
 import { listDigests, getCompetitor } from "@/lib/digest";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
+import { stripeHostedUrl } from "@/lib/stripe";
 import type { Digest, Competitor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function Landing() {
+  const stripeUrl = stripeHostedUrl();
+
   let latest: Pick<Digest, "id" | "urgency" | "period_start" | "period_end" | "body"> | undefined;
   let latestCompetitor: Pick<Competitor, "id" | "name" | "domain"> | undefined;
   try {
@@ -192,7 +195,7 @@ export default async function Landing() {
               <li>Cancel anytime</li>
             </ul>
             <a
-              href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
+              href={stripeUrl}
               className="btn btn-primary plan-cta"
             >
               Subscribe

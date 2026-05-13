@@ -1136,6 +1136,28 @@ button.danger {
   text-decoration: underline;
 }
 
+/* ===== Stripe test-mode banner ===== */
+
+.test-mode-banner {
+  background: #fbbf24;
+  color: #1c1917;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid #b45309;
+}
+
+.test-mode-banner code {
+  background: rgba(0, 0, 0, 0.18);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
 /* ===== Site footer ===== */
 
 .site-footer {

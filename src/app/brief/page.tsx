@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { listDigests, getCompetitor } from "@/lib/digest";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
+import { stripeHostedUrl } from "@/lib/stripe";
 import type { Digest, Competitor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ interface BriefRow {
 }
 
 export default async function PublicBrief() {
+  const stripeUrl = stripeHostedUrl();
   const rows: BriefRow[] = [];
 
   try {
@@ -63,7 +65,7 @@ export default async function PublicBrief() {
           a set of tracked competitors, then writes a brief on what changed and what
           it implies. Below is this week's output, made public. Want this for{" "}
           <em>your</em> competitor set?{" "}
-          <a href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605">Subscribe to Hosted ($19/mo)</a> or{" "}
+          <a href={stripeUrl}>Subscribe to Hosted ($19/mo)</a> or{" "}
           <a href="https://github.com/getdrift/drift">self-host it free</a>.
         </p>
       </div>
@@ -140,10 +142,7 @@ export default async function PublicBrief() {
           any machine (even a $35 Raspberry Pi), with AI inference on a free tier.
         </p>
         <div className="hero-cta" style={{ justifyContent: "center" }}>
-          <a
-            href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
-            className="btn btn-primary"
-          >
+          <a href={stripeUrl} className="btn btn-primary">
             Subscribe — $19/mo
           </a>
           <a

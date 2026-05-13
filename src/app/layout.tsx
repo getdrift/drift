@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { authDisabled, SESSION_COOKIE, verifySession } from "@/lib/auth";
+import { isStripeTestMode } from "@/lib/stripe";
 import "./globals.css";
 
 const SITE_URL = process.env.PUBLIC_URL ?? "https://drift.gibbon-brill.ts.net";
@@ -63,6 +64,7 @@ export default async function RootLayout({
   const token = c.get(SESSION_COOKIE)?.value;
   const session = await verifySession(token);
   const authed = !!session || authDisabled();
+  const testMode = isStripeTestMode();
 
   const jsonLd = [
     {
@@ -127,6 +129,12 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {testMode ? (
+          <div className="test-mode-banner">
+            ⚠ STRIPE TEST MODE — payments here are simulated, no real money
+            moves. Use test card <code>4242 4242 4242 4242</code> at checkout.
+          </div>
+        ) : null}
         <header className="site-header">
           <div className="site-header-inner">
             <a href="/" className="site-logo" aria-label="Drift home">

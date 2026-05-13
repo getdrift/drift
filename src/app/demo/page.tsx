@@ -1,5 +1,6 @@
 import { getCompetitor, listDigests } from "@/lib/digest";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
+import { stripeHostedUrl } from "@/lib/stripe";
 import type { Digest, Competitor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ interface DemoRow {
 }
 
 export default async function Demo() {
+  const stripeUrl = stripeHostedUrl();
   const rows: DemoRow[] = [];
 
   try {
@@ -115,10 +117,7 @@ export default async function Demo() {
       <section className="demo-cta">
         <h2>This every Monday for your industry?</h2>
         <div className="hero-cta" style={{ justifyContent: "center" }}>
-          <a
-            href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
-            className="btn btn-primary"
-          >
+          <a href={stripeUrl} className="btn btn-primary">
             Subscribe — $19/mo
           </a>
           <a
