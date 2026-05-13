@@ -865,7 +865,7 @@ main {
   flex: 1;
 }
 
-input[type="text"], input[type="url"], select {
+input[type="text"], input[type="url"], input[type="email"], input[type="password"], select, textarea {
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -876,9 +876,15 @@ input[type="text"], input[type="url"], select {
   width: 100%;
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent-dim);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
 button {
@@ -1408,6 +1414,45 @@ button.danger {
   letter-spacing: 0.06em;
   font-weight: 600;
   cursor: help;
+}
+
+/* ===== Two-row inline forms (source + delivery destination) =====
+ * Pattern: full-width URL/email on top, kind + label + button on bottom.
+ * Prevents the URL placeholder from getting visually crushed when 4 fields
+ * fight for a single row. */
+
+.row-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row-form-url {
+  width: 100%;
+}
+
+.row-form-meta {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-form-meta select,
+.row-form-meta input,
+.row-form-meta button {
+  width: 100%;
+}
+
+.row-form-meta button {
+  white-space: nowrap;
+  padding: 8px 14px;
+}
+
+@media (max-width: 600px) {
+  .row-form-meta {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== Add-form-stacked (two-row add competitor form) ===== */

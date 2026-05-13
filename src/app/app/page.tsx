@@ -267,20 +267,28 @@ export default async function Dashboard({
               )}
             </div>
 
-            <form action={createSourceAction} className="add-form" style={{ marginTop: 16 }}>
+            <form action={createSourceAction} className="row-form" style={{ marginTop: 16 }}>
               <input type="hidden" name="competitor_id" value={c.id} />
-              <input type="url" name="url" placeholder="https://…" required />
-              <select name="kind" defaultValue="other">
-                {KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-              <input type="text" name="label" placeholder="Label (optional)" />
-              <button type="submit" className="secondary">
-                + source
-              </button>
+              <input
+                type="url"
+                name="url"
+                placeholder="https://linear.app/pricing"
+                required
+                className="row-form-url"
+              />
+              <div className="row-form-meta">
+                <select name="kind" defaultValue="other">
+                  {KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </select>
+                <input type="text" name="label" placeholder="Label (optional)" />
+                <button type="submit" className="secondary">
+                  + source
+                </button>
+              </div>
             </form>
 
             <div className="webhooks">
@@ -329,24 +337,27 @@ export default async function Dashboard({
                   </div>
                 ))
               )}
-              <form action={createWebhookAction} className="add-form" style={{ marginTop: 12 }}>
+              <form action={createWebhookAction} className="row-form" style={{ marginTop: 12 }}>
                 <input type="hidden" name="competitor_id" value={c.id} />
                 <input
                   type="text"
                   name="url"
-                  placeholder="email@you.com   or   https://hooks.slack.com/services/…"
+                  placeholder="you@example.com  ·  https://hooks.slack.com/services/…  ·  discord webhook URL  ·  https://hooks.zapier.com/…"
                   required
+                  className="row-form-url"
                 />
-                <select name="kind" defaultValue="email">
-                  <option value="email">email</option>
-                  <option value="slack">slack</option>
-                  <option value="discord">discord</option>
-                  <option value="generic">generic (Zapier / Make / n8n / custom)</option>
-                </select>
-                <input type="text" name="label" placeholder="Label (optional)" />
-                <button type="submit" className="secondary">
-                  + delivery destination
-                </button>
+                <div className="row-form-meta">
+                  <select name="kind" defaultValue="email">
+                    <option value="email">email</option>
+                    <option value="slack">slack</option>
+                    <option value="discord">discord</option>
+                    <option value="generic">generic webhook</option>
+                  </select>
+                  <input type="text" name="label" placeholder="Label (optional)" />
+                  <button type="submit" className="secondary">
+                    + delivery destination
+                  </button>
+                </div>
               </form>
             </div>
 

@@ -133,6 +133,25 @@ async function migrate(client: Client) {
   await tryAddColumn(client, "workspaces", "subscription_active", "INTEGER NOT NULL DEFAULT 1");
   await tryAddColumn(client, "workspaces", "subscription_status", "TEXT NOT NULL DEFAULT 'active'");
 
+  // Pre-multi-tenant competitors had UNIQUE(domain) — blocks two workspaces
+  // from tracking the same company. Rebuild the table once to switch to
+  // UNIQUE(workspace_id, domain). Detect by checking the CREATE statement.
+  const schemaCheck = await client.execute({
+    sql: "SELECT sql FROM sqlite_master WHERE type='table' AND name='competitors'",
+    args: [],
+  });
+  const schemaSql = String(
+    (schemaCheck.rows[0] as unknown as { sql?: string } | undefined)?.sql ?? "",
+  );
+  // Old schema: "domain TEXT NOT NULL UNIQUE" inline.
+  // New schema: "UNIQUE(workspace_id, domain)" as a table constraint.
+  const hasNewUnique = /UNIQUE\s*\(\s*workspace_id\s*,\s*domain\s*\)/i.test(schemaSql);
+  const hasLegacyInlineUnique =
+    /domain\s+TEXT\s+NOT\s+NULL\s+UNIQUE/i.test(schemaSql);
+  if (!hasNewUnique && hasLegacyInlineUnique) {
+    await rebuildCompetitorsTable(client);
+  }
+
   // ---- Phase 3: Indexes (now safe — columns exist) ----
   await client.batch(
     [
@@ -190,4 +209,47 @@ async function tryAddColumn(
       throw e;
     }
   }
+}
+
+/**
+ * Rebuild competitors table to swap UNIQUE(domain) → UNIQUE(workspace_id, domain).
+ * Idempotent caller — only runs when the legacy inline UNIQUE is detected.
+ *
+ * Disables foreign keys during the swap so the FK references in sources,
+ * snapshots, digests, webhooks survive the DROP. All rows preserved with
+ * original ids.
+ */
+async function rebuildCompetitorsTable(client: Client): Promise<void> {
+  // libsql batch is transactional; run as one unit.
+  await client.batch(
+    [
+      "PRAGMA foreign_keys = OFF",
+      `CREATE TABLE competitors_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workspace_id INTEGER NOT NULL DEFAULT 1,
+        name TEXT NOT NULL,
+        domain TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        verified_summary TEXT,
+        verified_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(workspace_id, domain)
+      )`,
+      `INSERT INTO competitors_new (id, workspace_id, name, domain, description, verified_summary, verified_at, created_at)
+        SELECT id,
+               COALESCE(workspace_id, 1),
+               name,
+               domain,
+               COALESCE(description, ''),
+               verified_summary,
+               verified_at,
+               created_at
+        FROM competitors`,
+      "DROP TABLE competitors",
+      "ALTER TABLE competitors_new RENAME TO competitors",
+      `CREATE INDEX IF NOT EXISTS idx_competitors_workspace ON competitors(workspace_id)`,
+      "PRAGMA foreign_keys = ON",
+    ],
+    "write",
+  );
 }
