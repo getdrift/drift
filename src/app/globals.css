@@ -1293,6 +1293,173 @@ button.danger {
   line-height: 1.55;
 }
 
+/* ===== Workspace header (top of /app dashboard) ===== */
+
+.workspace-header {
+  background: linear-gradient(135deg, rgba(94, 234, 212, 0.06), rgba(94, 234, 212, 0.02));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.workspace-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.workspace-header-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.workspace-header-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.workspace-header-meta strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.workspace-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.plan-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.plan-owner {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--med);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.plan-hosted {
+  background: rgba(94, 234, 212, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(94, 234, 212, 0.25);
+}
+
+.plan-agency {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+/* ===== Welcome card (empty-workspace onboarding) ===== */
+
+.welcome-card {
+  margin-top: 16px;
+  padding: 28px;
+  background: linear-gradient(160deg, rgba(94, 234, 212, 0.04), rgba(94, 234, 212, 0.01));
+  border: 1px solid var(--border);
+}
+
+.welcome-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  margin-bottom: 8px;
+}
+
+.welcome-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.welcome-sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0 0 16px;
+}
+
+.welcome-steps-list {
+  margin: 0 0 16px;
+  padding-left: 24px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.welcome-steps-list li {
+  margin-bottom: 8px;
+}
+
+.welcome-steps-list strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.welcome-help {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== Settings page ===== */
+
+.settings-dl {
+  margin: 8px 0 0;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 16px;
+  font-size: 14px;
+}
+
+.settings-dl dt {
+  color: var(--text-dim);
+  font-weight: 500;
+  padding: 6px 0;
+}
+
+.settings-dl dd {
+  margin: 0;
+  padding: 6px 0;
+  color: var(--text);
+}
+
+.settings-dl code {
+  background: var(--bg-elev);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
 /* ===== Plan note (founder discount, refund, etc.) ===== */
 
 .plan-note {
