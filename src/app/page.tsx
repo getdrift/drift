@@ -190,11 +190,14 @@ export default async function Landing() {
               <li>30-day money-back guarantee</li>
               <li>Cancel anytime</li>
             </ul>
-            <a href="/waitlist?plan=pro" className="btn btn-primary plan-cta">
-              Join the waitlist
+            <a
+              href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
+              className="btn btn-primary plan-cta"
+            >
+              Subscribe
             </a>
             <p className="plan-note">
-              Launch deal: <code>FOUNDER10</code> → $9/mo for life (first 10 customers)
+              Launch deal: use code <code>FOUNDER10</code> at checkout → $9/mo for life (first 10 customers)
             </p>
           </div>
           <div className="plan">

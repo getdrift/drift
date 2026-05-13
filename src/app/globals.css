@@ -1192,6 +1192,85 @@ button.danger {
   text-decoration: none;
 }
 
+/* ===== Welcome page (post-checkout) ===== */
+
+.welcome-steps {
+  margin: 24px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcome-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.welcome-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0b0d10;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.welcome-step strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.welcome-step p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.welcome-faq {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.welcome-faq-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.welcome-faq dl {
+  margin: 0;
+}
+
+.welcome-faq dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 12px;
+}
+
+.welcome-faq dt:first-child {
+  margin-top: 0;
+}
+
+.welcome-faq dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
 /* ===== Plan note (founder discount, refund, etc.) ===== */
 
 .plan-note {
