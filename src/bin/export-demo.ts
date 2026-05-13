@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { writeFileSync } from "node:fs";
 import { getCompetitor, listDigests } from "../lib/digest";
+import { OWNER_WORKSPACE_ID } from "../lib/db";
 
 async function main() {
   const out: Array<{
@@ -13,8 +14,8 @@ async function main() {
     created_at: string;
   }> = [];
 
-  for (const d of await listDigests()) {
-    const c = await getCompetitor(d.competitor_id);
+  for (const d of await listDigests(OWNER_WORKSPACE_ID)) {
+    const c = await getCompetitor(OWNER_WORKSPACE_ID, d.competitor_id);
     if (!c) continue;
     out.push({
       id: d.id,

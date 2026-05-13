@@ -1,4 +1,5 @@
 import { listDigests, getCompetitor } from "@/lib/digest";
+import { OWNER_WORKSPACE_ID } from "@/lib/auth";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
 import { stripeHostedUrl } from "@/lib/stripe";
 import type { Digest, Competitor } from "@/lib/types";
@@ -11,10 +12,10 @@ export default async function Landing() {
   let latest: Pick<Digest, "id" | "urgency" | "period_start" | "period_end" | "body"> | undefined;
   let latestCompetitor: Pick<Competitor, "id" | "name" | "domain"> | undefined;
   try {
-    const fromDb = (await listDigests())[0];
+    const fromDb = (await listDigests(OWNER_WORKSPACE_ID))[0];
     if (fromDb) {
       latest = fromDb;
-      latestCompetitor = await getCompetitor(fromDb.competitor_id);
+      latestCompetitor = await getCompetitor(OWNER_WORKSPACE_ID, fromDb.competitor_id);
     }
   } catch {
     // fall through

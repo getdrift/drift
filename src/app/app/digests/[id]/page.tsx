@@ -1,4 +1,5 @@
 import { getCompetitor, readDigest } from "@/lib/digest";
+import { requireWorkspaceId } from "@/lib/session-helpers";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -9,13 +10,14 @@ export default async function DigestPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const workspaceId = await requireWorkspaceId();
   let digest;
   try {
-    digest = await readDigest(Number(id));
+    digest = await readDigest(workspaceId, Number(id));
   } catch {
     notFound();
   }
-  const competitor = await getCompetitor(digest.competitor_id);
+  const competitor = await getCompetitor(workspaceId, digest.competitor_id);
 
   return (
     <div className="digest-detail">

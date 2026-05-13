@@ -1,4 +1,5 @@
 import { getCompetitor, readDigest } from "@/lib/digest";
+import { OWNER_WORKSPACE_ID } from "@/lib/auth";
 import { renderEmailHtml } from "@/lib/email";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
 import type { Competitor, Digest } from "@/lib/types";
@@ -15,11 +16,11 @@ export async function GET(
   let digest: Pick<Digest, "id" | "urgency" | "period_start" | "period_end" | "body"> | undefined;
   let competitor: Pick<Competitor, "id" | "name" | "domain"> | undefined;
 
-  // Try DB first
+  // Try DB first — owner workspace's digests for the public preview endpoint.
   try {
-    const dbDigest = await readDigest(id);
+    const dbDigest = await readDigest(OWNER_WORKSPACE_ID, id);
     digest = dbDigest;
-    competitor = await getCompetitor(dbDigest.competitor_id);
+    competitor = await getCompetitor(OWNER_WORKSPACE_ID, dbDigest.competitor_id);
   } catch {
     // fall through
   }

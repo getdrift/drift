@@ -8,8 +8,23 @@ export type SourceKind =
   | "about"
   | "other";
 
+export interface Workspace {
+  id: number;
+  slug: string;
+  name: string;
+  owner_email: string;
+  plan: "hosted" | "agency" | "owner";
+  token_hash: string | null;
+  stripe_customer_id: string | null;
+  competitor_limit: number;
+  source_limit_per_competitor: number;
+  created_at: string;
+  deleted_at: string | null;
+}
+
 export interface Competitor {
   id: number;
+  workspace_id: number;
   name: string;
   domain: string;
   created_at: string;
@@ -17,6 +32,7 @@ export interface Competitor {
 
 export interface Source {
   id: number;
+  workspace_id: number;
   competitor_id: number;
   url: string;
   kind: SourceKind;
@@ -46,6 +62,7 @@ export interface DigestBody {
 
 export interface Digest {
   id: number;
+  workspace_id: number;
   competitor_id: number;
   period_start: string;
   period_end: string;
@@ -58,6 +75,7 @@ export type WebhookKind = "slack" | "discord" | "generic" | "email";
 
 export interface Webhook {
   id: number;
+  workspace_id: number;
   competitor_id: number;
   url: string;
   kind: WebhookKind;

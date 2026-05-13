@@ -17,36 +17,46 @@ function rowToObj<T>(row: Row): T {
   return row as unknown as T;
 }
 
-export async function listCompetitors(): Promise<Competitor[]> {
+// ---------- Competitors ----------
+
+export async function listCompetitors(workspaceId: number): Promise<Competitor[]> {
   const client = await db();
-  const r = await client.execute("SELECT * FROM competitors ORDER BY name");
+  const r = await client.execute({
+    sql: "SELECT * FROM competitors WHERE workspace_id = ? ORDER BY name",
+    args: [workspaceId],
+  });
   return r.rows.map(rowToObj<Competitor>);
 }
 
 export async function getCompetitor(
+  workspaceId: number,
   idOrDomain: string | number,
 ): Promise<Competitor | undefined> {
   const client = await db();
   let r;
   if (typeof idOrDomain === "number") {
     r = await client.execute({
-      sql: "SELECT * FROM competitors WHERE id = ?",
-      args: [idOrDomain],
+      sql: "SELECT * FROM competitors WHERE workspace_id = ? AND id = ?",
+      args: [workspaceId, idOrDomain],
     });
   } else {
     r = await client.execute({
-      sql: "SELECT * FROM competitors WHERE domain = ? OR name = ?",
-      args: [idOrDomain, idOrDomain],
+      sql: "SELECT * FROM competitors WHERE workspace_id = ? AND (domain = ? OR name = ?)",
+      args: [workspaceId, idOrDomain, idOrDomain],
     });
   }
   return r.rows[0] ? rowToObj<Competitor>(r.rows[0]) : undefined;
 }
 
-export async function addCompetitor(name: string, domain: string): Promise<Competitor> {
+export async function addCompetitor(
+  workspaceId: number,
+  name: string,
+  domain: string,
+): Promise<Competitor> {
   const client = await db();
   const info = await client.execute({
-    sql: "INSERT INTO competitors (name, domain) VALUES (?, ?)",
-    args: [name, domain],
+    sql: "INSERT INTO competitors (workspace_id, name, domain) VALUES (?, ?, ?)",
+    args: [workspaceId, name, domain],
   });
   const id = Number(info.lastInsertRowid);
   const r = await client.execute({
@@ -56,49 +66,42 @@ export async function addCompetitor(name: string, domain: string): Promise<Compe
   return rowToObj<Competitor>(r.rows[0]);
 }
 
-export async function removeCompetitor(id: number): Promise<void> {
+export async function removeCompetitor(workspaceId: number, id: number): Promise<void> {
   const client = await db();
   await client.execute({
-    sql: "DELETE FROM competitors WHERE id = ?",
-    args: [id],
+    sql: "DELETE FROM competitors WHERE workspace_id = ? AND id = ?",
+    args: [workspaceId, id],
   });
 }
 
-export async function removeSource(id: number): Promise<void> {
-  const client = await db();
-  await client.execute({
-    sql: "DELETE FROM sources WHERE id = ?",
-    args: [id],
-  });
-}
+// ---------- Sources ----------
 
-export async function removeDigest(id: number): Promise<void> {
-  const client = await db();
-  await client.execute({
-    sql: "DELETE FROM digests WHERE id = ?",
-    args: [id],
-  });
-}
-
-export async function listSources(competitorId: number): Promise<Source[]> {
+export async function listSources(
+  workspaceId: number,
+  competitorId: number,
+): Promise<Source[]> {
   const client = await db();
   const r = await client.execute({
-    sql: "SELECT * FROM sources WHERE competitor_id = ? ORDER BY kind, label",
-    args: [competitorId],
+    sql: "SELECT * FROM sources WHERE workspace_id = ? AND competitor_id = ? ORDER BY kind, label",
+    args: [workspaceId, competitorId],
   });
   return r.rows.map(rowToObj<Source>);
 }
 
 export async function addSource(
+  workspaceId: number,
   competitorId: number,
   url: string,
   kind: string,
   label: string,
 ): Promise<Source> {
+  // Guard: competitor must belong to this workspace.
+  const owner = await getCompetitor(workspaceId, competitorId);
+  if (!owner) throw new Error(`Competitor ${competitorId} not in workspace`);
   const client = await db();
   const info = await client.execute({
-    sql: "INSERT INTO sources (competitor_id, url, kind, label) VALUES (?, ?, ?, ?)",
-    args: [competitorId, url, kind, label],
+    sql: "INSERT INTO sources (workspace_id, competitor_id, url, kind, label) VALUES (?, ?, ?, ?, ?)",
+    args: [workspaceId, competitorId, url, kind, label],
   });
   const id = Number(info.lastInsertRowid);
   const r = await client.execute({
@@ -108,9 +111,17 @@ export async function addSource(
   return rowToObj<Source>(r.rows[0]);
 }
 
-export async function latestSnapshot(
-  sourceId: number,
-): Promise<Snapshot | undefined> {
+export async function removeSource(workspaceId: number, id: number): Promise<void> {
+  const client = await db();
+  await client.execute({
+    sql: "DELETE FROM sources WHERE workspace_id = ? AND id = ?",
+    args: [workspaceId, id],
+  });
+}
+
+// ---------- Snapshots (workspace-scoped via source.workspace_id) ----------
+
+export async function latestSnapshot(sourceId: number): Promise<Snapshot | undefined> {
   const client = await db();
   const r = await client.execute({
     sql: "SELECT * FROM snapshots WHERE source_id = ? ORDER BY fetched_at DESC LIMIT 1",
@@ -131,25 +142,33 @@ export async function snapshotBefore(
   return r.rows[0] ? rowToObj<Snapshot>(r.rows[0]) : undefined;
 }
 
-export async function listWebhooks(competitorId: number): Promise<Webhook[]> {
+// ---------- Webhooks ----------
+
+export async function listWebhooks(
+  workspaceId: number,
+  competitorId: number,
+): Promise<Webhook[]> {
   const client = await db();
   const r = await client.execute({
-    sql: "SELECT * FROM webhooks WHERE competitor_id = ? ORDER BY id",
-    args: [competitorId],
+    sql: "SELECT * FROM webhooks WHERE workspace_id = ? AND competitor_id = ? ORDER BY id",
+    args: [workspaceId, competitorId],
   });
   return r.rows.map(rowToObj<Webhook>);
 }
 
 export async function addWebhook(
+  workspaceId: number,
   competitorId: number,
   url: string,
   kind: WebhookKind,
   label: string,
 ): Promise<Webhook> {
+  const owner = await getCompetitor(workspaceId, competitorId);
+  if (!owner) throw new Error(`Competitor ${competitorId} not in workspace`);
   const client = await db();
   const info = await client.execute({
-    sql: "INSERT INTO webhooks (competitor_id, url, kind, label) VALUES (?, ?, ?, ?)",
-    args: [competitorId, url, kind, label],
+    sql: "INSERT INTO webhooks (workspace_id, competitor_id, url, kind, label) VALUES (?, ?, ?, ?, ?)",
+    args: [workspaceId, competitorId, url, kind, label],
   });
   const id = Number(info.lastInsertRowid);
   const r = await client.execute({
@@ -159,22 +178,23 @@ export async function addWebhook(
   return rowToObj<Webhook>(r.rows[0]);
 }
 
-export async function removeWebhook(id: number): Promise<void> {
+export async function removeWebhook(workspaceId: number, id: number): Promise<void> {
   const client = await db();
   await client.execute({
-    sql: "DELETE FROM webhooks WHERE id = ?",
-    args: [id],
+    sql: "DELETE FROM webhooks WHERE workspace_id = ? AND id = ?",
+    args: [workspaceId, id],
   });
 }
 
 export async function setWebhookEnabled(
+  workspaceId: number,
   id: number,
   enabled: boolean,
 ): Promise<void> {
   const client = await db();
   await client.execute({
-    sql: "UPDATE webhooks SET enabled = ? WHERE id = ?",
-    args: [enabled ? 1 : 0, id],
+    sql: "UPDATE webhooks SET enabled = ? WHERE workspace_id = ? AND id = ?",
+    args: [enabled ? 1 : 0, workspaceId, id],
   });
 }
 
@@ -195,13 +215,14 @@ async function recordDelivery(result: DeliveryResult): Promise<void> {
 }
 
 export async function deliverDigest(
+  workspaceId: number,
   competitorId: number,
   digestId: number,
 ): Promise<DeliveryResult[]> {
-  const competitor = await getCompetitor(competitorId);
+  const competitor = await getCompetitor(workspaceId, competitorId);
   if (!competitor) return [];
-  const digest = await readDigest(digestId);
-  const webhooks = (await listWebhooks(competitorId)).filter((w) => w.enabled);
+  const digest = await readDigest(workspaceId, digestId);
+  const webhooks = (await listWebhooks(workspaceId, competitorId)).filter((w) => w.enabled);
   const results: DeliveryResult[] = [];
   for (const w of webhooks) {
     const r = await deliver(w, competitor, digest);
@@ -210,6 +231,8 @@ export async function deliverDigest(
   }
   return results;
 }
+
+// ---------- Fetch + digest ----------
 
 export interface FetchResult {
   source: Source;
@@ -220,9 +243,10 @@ export interface FetchResult {
 }
 
 export async function fetchAllForCompetitor(
+  workspaceId: number,
   competitorId: number,
 ): Promise<FetchResult[]> {
-  const sources = await listSources(competitorId);
+  const sources = await listSources(workspaceId, competitorId);
   const results: FetchResult[] = [];
   for (const source of sources) {
     results.push(await fetchSource(source));
@@ -254,14 +278,15 @@ export async function fetchSource(source: Source): Promise<FetchResult> {
 }
 
 export async function generateDigest(
+  workspaceId: number,
   competitorId: number,
   periodStart: string,
   periodEnd: string,
 ): Promise<Digest> {
-  const competitor = await getCompetitor(competitorId);
-  if (!competitor) throw new Error(`Competitor ${competitorId} not found`);
+  const competitor = await getCompetitor(workspaceId, competitorId);
+  if (!competitor) throw new Error(`Competitor ${competitorId} not in workspace`);
 
-  const sources = await listSources(competitor.id);
+  const sources = await listSources(workspaceId, competitor.id);
   if (sources.length === 0) {
     throw new Error(`No sources configured for ${competitor.name}`);
   }
@@ -296,14 +321,21 @@ export async function generateDigest(
 
   const client = await db();
   const info = await client.execute({
-    sql: `INSERT INTO digests (competitor_id, period_start, period_end, urgency, body_json)
-          VALUES (?, ?, ?, ?, ?)`,
-    args: [competitor.id, periodStart, periodEnd, body.urgency, JSON.stringify(body)],
+    sql: `INSERT INTO digests (workspace_id, competitor_id, period_start, period_end, urgency, body_json)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [
+      workspaceId,
+      competitor.id,
+      periodStart,
+      periodEnd,
+      body.urgency,
+      JSON.stringify(body),
+    ],
   });
 
-  const digest = await readDigest(Number(info.lastInsertRowid));
+  const digest = await readDigest(workspaceId, Number(info.lastInsertRowid));
 
-  const webhooks = (await listWebhooks(competitor.id)).filter((w) => w.enabled);
+  const webhooks = (await listWebhooks(workspaceId, competitor.id)).filter((w) => w.enabled);
   for (const w of webhooks) {
     const r = await deliver(w, competitor, digest);
     await recordDelivery(r);
@@ -312,8 +344,11 @@ export async function generateDigest(
   return digest;
 }
 
+// ---------- Digests ----------
+
 interface DigestRow {
   id: number;
+  workspace_id: number;
   competitor_id: number;
   period_start: string;
   period_end: string;
@@ -322,31 +357,46 @@ interface DigestRow {
   created_at: string;
 }
 
-export async function readDigest(id: number): Promise<Digest> {
+export async function readDigest(workspaceId: number, id: number): Promise<Digest> {
   const client = await db();
   const r = await client.execute({
-    sql: "SELECT * FROM digests WHERE id = ?",
-    args: [id],
+    sql: "SELECT * FROM digests WHERE workspace_id = ? AND id = ?",
+    args: [workspaceId, id],
   });
   const row = r.rows[0];
   if (!row) throw new Error(`Digest ${id} not found`);
   return rowToDigest(rowToObj<DigestRow>(row));
 }
 
-export async function listDigests(competitorId?: number): Promise<Digest[]> {
+export async function listDigests(
+  workspaceId: number,
+  competitorId?: number,
+): Promise<Digest[]> {
   const client = await db();
   const r = competitorId
     ? await client.execute({
-        sql: "SELECT * FROM digests WHERE competitor_id = ? ORDER BY created_at DESC",
-        args: [competitorId],
+        sql: "SELECT * FROM digests WHERE workspace_id = ? AND competitor_id = ? ORDER BY created_at DESC",
+        args: [workspaceId, competitorId],
       })
-    : await client.execute("SELECT * FROM digests ORDER BY created_at DESC");
+    : await client.execute({
+        sql: "SELECT * FROM digests WHERE workspace_id = ? ORDER BY created_at DESC",
+        args: [workspaceId],
+      });
   return r.rows.map((row) => rowToDigest(rowToObj<DigestRow>(row)));
+}
+
+export async function removeDigest(workspaceId: number, id: number): Promise<void> {
+  const client = await db();
+  await client.execute({
+    sql: "DELETE FROM digests WHERE workspace_id = ? AND id = ?",
+    args: [workspaceId, id],
+  });
 }
 
 function rowToDigest(row: DigestRow): Digest {
   return {
     id: row.id,
+    workspace_id: row.workspace_id,
     competitor_id: row.competitor_id,
     period_start: row.period_start,
     period_end: row.period_end,

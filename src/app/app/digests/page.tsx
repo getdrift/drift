@@ -1,4 +1,5 @@
 import { listCompetitors, listDigests } from "@/lib/digest";
+import { requireWorkspaceId } from "@/lib/session-helpers";
 import { removeDigestAction } from "../../actions";
 import type { Competitor } from "@/lib/types";
 
@@ -21,10 +22,11 @@ async function DigestsList({
   const urgencyFilter = params.urgency;
   const competitorFilter = params.competitor ? Number(params.competitor) : undefined;
 
-  const competitors = await listCompetitors();
+  const workspaceId = await requireWorkspaceId();
+  const competitors = await listCompetitors(workspaceId);
   const byId = new Map<number, Competitor>(competitors.map((c) => [c.id, c]));
 
-  let digests = await listDigests(competitorFilter);
+  let digests = await listDigests(workspaceId, competitorFilter);
   if (urgencyFilter && ["high", "medium", "low"].includes(urgencyFilter)) {
     digests = digests.filter((d) => d.urgency === urgencyFilter);
   }

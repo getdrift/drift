@@ -4,6 +4,7 @@ import {
   listSources,
   listWebhooks,
 } from "@/lib/digest";
+import { requireWorkspaceId } from "@/lib/session-helpers";
 import {
   createCompetitorAction,
   createSourceAction,
@@ -29,13 +30,14 @@ const KINDS = [
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  const competitors = await listCompetitors();
+  const workspaceId = await requireWorkspaceId();
+  const competitors = await listCompetitors(workspaceId);
   const cards = await Promise.all(
     competitors.map(async (c) => ({
       c,
-      sources: await listSources(c.id),
-      digests: (await listDigests(c.id)).slice(0, 3),
-      webhooks: await listWebhooks(c.id),
+      sources: await listSources(workspaceId, c.id),
+      digests: (await listDigests(workspaceId, c.id)).slice(0, 3),
+      webhooks: await listWebhooks(workspaceId, c.id),
     })),
   );
 

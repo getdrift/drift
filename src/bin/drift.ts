@@ -18,33 +18,48 @@ import {
   removeSource,
   removeWebhook,
 } from "../lib/digest";
-import { db } from "../lib/db";
-import type { Competitor, WebhookKind } from "../lib/types";
+import { db, OWNER_WORKSPACE_ID } from "../lib/db";
+import {
+  createWorkspace,
+  findWorkspaceBySlug,
+  listWorkspaces,
+  regenerateToken,
+  sendWorkspaceWelcomeEmail,
+  softDeleteWorkspace,
+} from "../lib/workspace";
+import type { Competitor, WebhookKind, Workspace } from "../lib/types";
 
 const HELP = `drift — competitive intel CLI
 
 Usage:
   drift init-db
-  drift add <name> <domain>
-  drift source <competitor> <url> [--kind=KIND] [--label=LABEL]
-  drift list
-  drift fetch [competitor]
-  drift digest <competitor> [--days=7]
-  drift digests [competitor]
-  drift show <digest-id>
-  drift seed
+  drift add <name> <domain> [--workspace=SLUG]
+  drift source <competitor> <url> [--kind=KIND] [--label=LABEL] [--workspace=SLUG]
+  drift list [--workspace=SLUG]
+  drift fetch [competitor] [--workspace=SLUG]
+  drift digest <competitor> [--days=7] [--workspace=SLUG]
+  drift digests [competitor] [--workspace=SLUG]
+  drift show <digest-id> [--workspace=SLUG]
+  drift seed [--workspace=SLUG]
 
-  drift webhook add <competitor> <url> [--kind=slack|discord|generic|email] [--label=LABEL]
-  drift webhook list [competitor]
-  drift webhook remove <id>
-  drift webhook test <competitor>   redelivers latest digest
+  drift webhook add <competitor> <url> [--kind=slack|discord|generic|email] [--label=LABEL] [--workspace=SLUG]
+  drift webhook list [competitor] [--workspace=SLUG]
+  drift webhook remove <id> [--workspace=SLUG]
+  drift webhook test <competitor> [--workspace=SLUG]   redelivers latest digest
 
-  drift remove competitor <selector>
-  drift remove source <id>
-  drift remove digest <id>
+  drift remove competitor <selector> [--workspace=SLUG]
+  drift remove source <id> [--workspace=SLUG]
+  drift remove digest <id> [--workspace=SLUG]
+
+  drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--no-email]
+  drift workspace list
+  drift workspace token <slug>   regenerate access token, prints + emails new one
+  drift workspace remove <slug>
 
 Source kinds: homepage, pricing, changelog, blog, docs, jobs, about, other
 Competitor selectors accept domain, name, or numeric id.
+Default workspace is "owner" (your admin workspace). Use --workspace=SLUG to
+operate on a customer's workspace from the CLI.
 `;
 
 async function main() {
@@ -68,7 +83,7 @@ async function main() {
     case "source":
       return cmdSource(rest);
     case "list":
-      return cmdList();
+      return cmdList(rest);
     case "fetch":
       return cmdFetch(rest);
     case "digest":
@@ -78,11 +93,13 @@ async function main() {
     case "show":
       return cmdShow(rest);
     case "seed":
-      return cmdSeed();
+      return cmdSeed(rest);
     case "webhook":
       return cmdWebhook(rest);
     case "remove":
       return cmdRemove(rest);
+    case "workspace":
+      return cmdWorkspace(rest);
     default:
       console.error(`unknown command: ${cmd}\n`);
       console.log(HELP);
@@ -90,10 +107,25 @@ async function main() {
   }
 }
 
+// ---------- Workspace helpers ----------
+
+async function resolveWorkspaceId(flags: Record<string, string>): Promise<number> {
+  const slug = flags.workspace;
+  if (!slug || slug === "owner") return OWNER_WORKSPACE_ID;
+  const ws = await findWorkspaceBySlug(slug);
+  if (!ws) die(`workspace not found: ${slug}`);
+  return ws.id;
+}
+
+// ---------- Commands ----------
+
 async function cmdAdd(args: string[]) {
-  const [name, domain] = args;
-  if (!name || !domain) die("usage: drift add <name> <domain>");
-  const c = await addCompetitor(name, domain);
+  const positional: string[] = [];
+  const flags = parseFlags(args, positional);
+  const [name, domain] = positional;
+  if (!name || !domain) die("usage: drift add <name> <domain> [--workspace=SLUG]");
+  const workspaceId = await resolveWorkspaceId(flags);
+  const c = await addCompetitor(workspaceId, name, domain);
   console.log(`✓ added competitor #${c.id}: ${c.name} (${c.domain})`);
 }
 
@@ -101,23 +133,28 @@ async function cmdSource(args: string[]) {
   const positional: string[] = [];
   const flags = parseFlags(args, positional);
   const [selector, url] = positional;
-  if (!selector || !url) die("usage: drift source <competitor> <url> [--kind=KIND] [--label=LABEL]");
-  const c = await resolveCompetitor(selector);
+  if (!selector || !url) {
+    die("usage: drift source <competitor> <url> [--kind=KIND] [--label=LABEL] [--workspace=SLUG]");
+  }
+  const workspaceId = await resolveWorkspaceId(flags);
+  const c = await resolveCompetitor(workspaceId, selector);
   const kind = flags.kind ?? guessKind(url);
   const label = flags.label ?? defaultLabel(kind);
-  const s = await addSource(c.id, url, kind, label);
+  const s = await addSource(workspaceId, c.id, url, kind, label);
   console.log(`✓ added source #${s.id}: [${s.kind}] ${s.label} → ${s.url}`);
 }
 
-async function cmdList() {
-  const competitors = await listCompetitors();
+async function cmdList(args: string[]) {
+  const flags = parseFlags(args, []);
+  const workspaceId = await resolveWorkspaceId(flags);
+  const competitors = await listCompetitors(workspaceId);
   if (competitors.length === 0) {
     console.log("(no competitors yet — `drift add <name> <domain>`)");
     return;
   }
   for (const c of competitors) {
     console.log(`\n#${c.id}  ${c.name}  (${c.domain})`);
-    const sources = await listSources(c.id);
+    const sources = await listSources(workspaceId, c.id);
     if (sources.length === 0) {
       console.log("  (no sources)");
       continue;
@@ -129,13 +166,17 @@ async function cmdList() {
 }
 
 async function cmdFetch(args: string[]) {
-  const targets: Competitor[] = args.length > 0
-    ? [await resolveCompetitor(args[0])]
-    : await listCompetitors();
+  const positional: string[] = [];
+  const flags = parseFlags(args, positional);
+  const workspaceId = await resolveWorkspaceId(flags);
+  const targets: Competitor[] =
+    positional.length > 0
+      ? [await resolveCompetitor(workspaceId, positional[0])]
+      : await listCompetitors(workspaceId);
   if (targets.length === 0) die("no competitors to fetch");
   for (const c of targets) {
     console.log(`\n▸ ${c.name}`);
-    const results = await fetchAllForCompetitor(c.id);
+    const results = await fetchAllForCompetitor(workspaceId, c.id);
     if (results.length === 0) {
       console.log("  (no sources configured)");
       continue;
@@ -154,26 +195,31 @@ async function cmdDigest(args: string[]) {
   const positional: string[] = [];
   const flags = parseFlags(args, positional);
   const [selector] = positional;
-  if (!selector) die("usage: drift digest <competitor> [--days=7]");
-  const c = await resolveCompetitor(selector);
+  if (!selector) die("usage: drift digest <competitor> [--days=7] [--workspace=SLUG]");
+  const workspaceId = await resolveWorkspaceId(flags);
+  const c = await resolveCompetitor(workspaceId, selector);
   const days = Number(flags.days ?? 7);
   const end = new Date();
   const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
   console.log(`▸ generating digest for ${c.name} (${days}d)…`);
-  const d = await generateDigest(c.id, start.toISOString(), end.toISOString());
+  const d = await generateDigest(workspaceId, c.id, start.toISOString(), end.toISOString());
   printDigest(d, c.name);
 }
 
 async function cmdDigests(args: string[]) {
-  const selector = args[0];
-  const competitorId = selector ? (await resolveCompetitor(selector)).id : undefined;
-  const digests = await listDigests(competitorId);
+  const positional: string[] = [];
+  const flags = parseFlags(args, positional);
+  const workspaceId = await resolveWorkspaceId(flags);
+  const competitorId = positional[0]
+    ? (await resolveCompetitor(workspaceId, positional[0])).id
+    : undefined;
+  const digests = await listDigests(workspaceId, competitorId);
   if (digests.length === 0) {
     console.log("(no digests yet — `drift digest <competitor>`)");
     return;
   }
   for (const d of digests) {
-    const c = await getCompetitor(d.competitor_id);
+    const c = await getCompetitor(workspaceId, d.competitor_id);
     console.log(
       `#${d.id}  [${d.urgency.padEnd(6)}]  ${c?.name ?? "?"}  ${d.created_at}`,
     );
@@ -182,10 +228,13 @@ async function cmdDigests(args: string[]) {
 }
 
 async function cmdShow(args: string[]) {
-  const [idStr] = args;
-  if (!idStr) die("usage: drift show <digest-id>");
-  const d = await readDigest(Number(idStr));
-  const c = await getCompetitor(d.competitor_id);
+  const positional: string[] = [];
+  const flags = parseFlags(args, positional);
+  const [idStr] = positional;
+  if (!idStr) die("usage: drift show <digest-id> [--workspace=SLUG]");
+  const workspaceId = await resolveWorkspaceId(flags);
+  const d = await readDigest(workspaceId, Number(idStr));
+  const c = await getCompetitor(workspaceId, d.competitor_id);
   printDigest(d, c?.name ?? "?");
 }
 
@@ -196,19 +245,26 @@ async function cmdWebhook(args: string[]) {
       const positional: string[] = [];
       const flags = parseFlags(rest, positional);
       const [selector, url] = positional;
-      if (!selector || !url) die("usage: drift webhook add <competitor> <url> [--kind=slack|discord|generic|email]");
-      const c = await resolveCompetitor(selector);
+      if (!selector || !url) {
+        die("usage: drift webhook add <competitor> <url> [--kind=slack|discord|generic|email] [--workspace=SLUG]");
+      }
+      const workspaceId = await resolveWorkspaceId(flags);
+      const c = await resolveCompetitor(workspaceId, selector);
       const kind = (flags.kind ?? guessWebhookKind(url)) as WebhookKind;
       const label = flags.label ?? defaultLabel(kind);
-      const w = await addWebhook(c.id, url, kind, label);
+      const w = await addWebhook(workspaceId, c.id, url, kind, label);
       console.log(`✓ added webhook #${w.id}: [${w.kind}] ${w.label} for ${c.name}`);
       return;
     }
     case "list": {
-      const selector = rest[0];
-      const competitors = selector ? [await resolveCompetitor(selector)] : await listCompetitors();
+      const positional: string[] = [];
+      const flags = parseFlags(rest, positional);
+      const workspaceId = await resolveWorkspaceId(flags);
+      const competitors = positional[0]
+        ? [await resolveCompetitor(workspaceId, positional[0])]
+        : await listCompetitors(workspaceId);
       for (const c of competitors) {
-        const webhooks = await listWebhooks(c.id);
+        const webhooks = await listWebhooks(workspaceId, c.id);
         if (webhooks.length === 0) continue;
         console.log(`\n${c.name} (${c.domain})`);
         for (const w of webhooks) {
@@ -222,19 +278,25 @@ async function cmdWebhook(args: string[]) {
       return;
     }
     case "remove": {
-      const [idStr] = rest;
-      if (!idStr) die("usage: drift webhook remove <id>");
-      await removeWebhook(Number(idStr));
+      const positional: string[] = [];
+      const flags = parseFlags(rest, positional);
+      const [idStr] = positional;
+      if (!idStr) die("usage: drift webhook remove <id> [--workspace=SLUG]");
+      const workspaceId = await resolveWorkspaceId(flags);
+      await removeWebhook(workspaceId, Number(idStr));
       console.log(`✓ removed webhook #${idStr}`);
       return;
     }
     case "test": {
-      const [selector] = rest;
-      if (!selector) die("usage: drift webhook test <competitor>");
-      const c = await resolveCompetitor(selector);
-      const latest = (await listDigests(c.id))[0];
+      const positional: string[] = [];
+      const flags = parseFlags(rest, positional);
+      const [selector] = positional;
+      if (!selector) die("usage: drift webhook test <competitor> [--workspace=SLUG]");
+      const workspaceId = await resolveWorkspaceId(flags);
+      const c = await resolveCompetitor(workspaceId, selector);
+      const latest = (await listDigests(workspaceId, c.id))[0];
       if (!latest) die(`no digest yet for ${c.name} — run \`drift digest ${c.domain}\` first`);
-      const results = await deliverDigest(c.id, latest.id);
+      const results = await deliverDigest(workspaceId, c.id, latest.id);
       if (results.length === 0) {
         console.log(`(no enabled webhooks for ${c.name})`);
         return;
@@ -251,28 +313,118 @@ async function cmdWebhook(args: string[]) {
 }
 
 async function cmdRemove(args: string[]) {
-  const [target, value] = args;
+  const positional: string[] = [];
+  const flags = parseFlags(args, positional);
+  const [target, value] = positional;
   if (!target || !value) die("usage: drift remove <competitor|source|digest> <id-or-selector>");
+  const workspaceId = await resolveWorkspaceId(flags);
   switch (target) {
     case "competitor": {
-      const c = await resolveCompetitor(value);
-      await removeCompetitor(c.id);
+      const c = await resolveCompetitor(workspaceId, value);
+      await removeCompetitor(workspaceId, c.id);
       console.log(`✓ removed competitor #${c.id} ${c.name} and all its sources, webhooks, digests`);
       return;
     }
     case "source": {
-      await removeSource(Number(value));
+      await removeSource(workspaceId, Number(value));
       console.log(`✓ removed source #${value}`);
       return;
     }
     case "digest": {
-      await removeDigest(Number(value));
+      await removeDigest(workspaceId, Number(value));
       console.log(`✓ removed digest #${value}`);
       return;
     }
     default:
       die("usage: drift remove <competitor|source|digest> <id-or-selector>");
   }
+}
+
+async function cmdWorkspace(args: string[]) {
+  const [sub, ...rest] = args;
+  switch (sub) {
+    case "add": {
+      const positional: string[] = [];
+      const flags = parseFlags(rest, positional);
+      const [email] = positional;
+      if (!email) die("usage: drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--no-email]");
+      const plan = (flags.plan ?? "hosted") as "hosted" | "agency";
+      const { workspace, plainToken } = await createWorkspace({
+        email,
+        name: flags.name,
+        plan,
+      });
+      printWorkspaceCreated(workspace, plainToken);
+
+      if (flags["no-email"] === "true") {
+        console.log("\n(skipped welcome email — pass without --no-email to send)");
+      } else {
+        const result = await sendWorkspaceWelcomeEmail(workspace, plainToken);
+        if (result.skipped) {
+          console.log("\n⚠ welcome email NOT sent: RESEND_API_KEY not set");
+          console.log("  → set it in .env, then resend with: drift workspace token", workspace.slug);
+        } else if (!result.ok) {
+          console.log(`\n⚠ welcome email failed: ${result.error}`);
+        } else {
+          console.log(`\n✓ welcome email sent to ${workspace.owner_email}`);
+        }
+      }
+      return;
+    }
+    case "list": {
+      const workspaces = await listWorkspaces();
+      console.log(`\n${workspaces.length} workspace(s):\n`);
+      for (const ws of workspaces) {
+        console.log(
+          `  #${ws.id} ${ws.slug.padEnd(20)} ${ws.plan.padEnd(8)} ${ws.owner_email.padEnd(35)} ${ws.competitor_limit} comp / ${ws.source_limit_per_competitor} src`,
+        );
+      }
+      return;
+    }
+    case "token": {
+      const [slug] = rest;
+      if (!slug) die("usage: drift workspace token <slug>");
+      const ws = await findWorkspaceBySlug(slug);
+      if (!ws) die(`workspace not found: ${slug}`);
+      const plain = await regenerateToken(ws.id);
+      printWorkspaceCreated(ws, plain);
+      const result = await sendWorkspaceWelcomeEmail(ws, plain);
+      if (result.ok) console.log(`\n✓ email re-sent to ${ws.owner_email}`);
+      else console.log(`\n⚠ email not sent: ${result.error ?? "skipped"}`);
+      return;
+    }
+    case "remove": {
+      const [slug] = rest;
+      if (!slug) die("usage: drift workspace remove <slug>");
+      const ws = await findWorkspaceBySlug(slug);
+      if (!ws) die(`workspace not found: ${slug}`);
+      await softDeleteWorkspace(ws.id);
+      console.log(`✓ soft-deleted workspace ${ws.slug} (data kept 30 days then purged)`);
+      return;
+    }
+    default:
+      die("usage: drift workspace <add|list|token|remove> …");
+  }
+}
+
+function printWorkspaceCreated(ws: Workspace, plainToken: string) {
+  const siteUrl = process.env.PUBLIC_URL ?? "https://drift.gibbon-brill.ts.net";
+  const loginUrl = `${siteUrl}/api/login?token=${plainToken}`;
+  const bar = "─".repeat(72);
+  console.log(`\n${bar}`);
+  console.log(` WORKSPACE PROVISIONED  #${ws.id}  ${ws.slug}  [${ws.plan}]`);
+  console.log(bar);
+  console.log(`  Email:        ${ws.owner_email}`);
+  console.log(`  Name:         ${ws.name}`);
+  console.log(`  Competitors:  ${ws.competitor_limit} max`);
+  console.log(`  Sources/comp: ${ws.source_limit_per_competitor} max`);
+  console.log("");
+  console.log("  Login URL (share this with the customer):");
+  console.log(`  ${loginUrl}`);
+  console.log("");
+  console.log("  Raw token (standalone, for support):");
+  console.log(`  ${plainToken}`);
+  console.log(bar);
 }
 
 function guessWebhookKind(url: string): WebhookKind {
@@ -288,7 +440,9 @@ function maskUrl(url: string): string {
   return url.slice(0, 40) + "…" + url.slice(-12);
 }
 
-async function cmdSeed() {
+async function cmdSeed(args: string[]) {
+  const flags = parseFlags(args, []);
+  const workspaceId = await resolveWorkspaceId(flags);
   const seeds: Array<[string, string, Array<[string, string, string]>]> = [
     [
       "Linear",
@@ -310,16 +464,16 @@ async function cmdSeed() {
     ],
   ];
   for (const [name, domain, sources] of seeds) {
-    let c = await getCompetitor(domain);
+    let c = await getCompetitor(workspaceId, domain);
     if (!c) {
-      c = await addCompetitor(name, domain);
+      c = await addCompetitor(workspaceId, name, domain);
       console.log(`✓ seeded ${name}`);
     } else {
       console.log(`· ${name} already exists`);
     }
     for (const [url, kind, label] of sources) {
       try {
-        await addSource(c.id, url, kind, label);
+        await addSource(workspaceId, c.id, url, kind, label);
       } catch {
         // unique constraint — already added
       }
@@ -359,11 +513,14 @@ function parseFlags(args: string[], positional: string[]): Record<string, string
   return flags;
 }
 
-async function resolveCompetitor(selector: string): Promise<Competitor> {
+async function resolveCompetitor(
+  workspaceId: number,
+  selector: string,
+): Promise<Competitor> {
   const asNum = Number(selector);
   const c = Number.isFinite(asNum) && !selector.includes(".")
-    ? await getCompetitor(asNum)
-    : await getCompetitor(selector);
+    ? await getCompetitor(workspaceId, asNum)
+    : await getCompetitor(workspaceId, selector);
   if (!c) die(`competitor not found: ${selector}`);
   return c;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { listDigests, getCompetitor } from "@/lib/digest";
+import { OWNER_WORKSPACE_ID } from "@/lib/auth";
 import { DEMO_DIGESTS } from "@/lib/demo-data";
 import { stripeHostedUrl } from "@/lib/stripe";
 import type { Digest, Competitor } from "@/lib/types";
@@ -37,9 +38,12 @@ export default async function PublicBrief() {
   const rows: BriefRow[] = [];
 
   try {
-    const live = await listDigests();
+    const live = await listDigests(OWNER_WORKSPACE_ID);
     for (const d of live.slice(0, 8)) {
-      rows.push({ digest: d, competitor: await getCompetitor(d.competitor_id) });
+      rows.push({
+        digest: d,
+        competitor: await getCompetitor(OWNER_WORKSPACE_ID, d.competitor_id),
+      });
     }
   } catch {
     // DB unavailable — fall through to baked data

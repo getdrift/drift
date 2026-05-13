@@ -3,6 +3,10 @@
 const COOKIE_NAME = "drift_session";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** Owner's workspace id. Mirrors db.ts OWNER_WORKSPACE_ID — duplicated to
+ * keep this module edge-safe (no node:fs imports from db.ts). */
+export const OWNER_WORKSPACE_ID = 1;
+
 export const SESSION_COOKIE = COOKIE_NAME;
 export const SESSION_MAX_AGE_SECONDS = Math.floor(MAX_AGE_MS / 1000);
 
@@ -18,11 +22,26 @@ export function checkPassword(input: string): boolean {
 
 interface SessionPayload {
   user: string;
+  /** Workspace this session belongs to. Older sessions (pre-multi-tenant)
+   *  defaulted to OWNER_WORKSPACE_ID; verify() backfills that. */
+  workspace_id?: number;
   exp: number;
 }
 
-export async function signSession(user: string): Promise<string> {
-  const payload: SessionPayload = { user, exp: Date.now() + MAX_AGE_MS };
+export interface Session {
+  user: string;
+  workspace_id: number;
+}
+
+export async function signSession(
+  user: string,
+  workspace_id: number = OWNER_WORKSPACE_ID,
+): Promise<string> {
+  const payload: SessionPayload = {
+    user,
+    workspace_id,
+    exp: Date.now() + MAX_AGE_MS,
+  };
   const payloadJson = JSON.stringify(payload);
   const sig = await hmacHex(payloadJson);
   return base64UrlEncode(payloadJson) + "." + sig;
@@ -30,7 +49,7 @@ export async function signSession(user: string): Promise<string> {
 
 export async function verifySession(
   token: string | undefined,
-): Promise<{ user: string } | null> {
+): Promise<Session | null> {
   if (!token) return null;
   const dot = token.indexOf(".");
   if (dot === -1) return null;
@@ -52,7 +71,11 @@ export async function verifySession(
   }
   if (typeof payload.exp !== "number" || payload.exp < Date.now()) return null;
   if (typeof payload.user !== "string" || !payload.user) return null;
-  return { user: payload.user };
+  const workspace_id =
+    typeof payload.workspace_id === "number" && payload.workspace_id > 0
+      ? payload.workspace_id
+      : OWNER_WORKSPACE_ID;
+  return { user: payload.user, workspace_id };
 }
 
 async function hmacHex(message: string): Promise<string> {
