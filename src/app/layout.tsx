@@ -181,9 +181,10 @@ export default async function RootLayout({
             <div className="site-footer-links">
               <a href="/brief">This week's brief</a>
               <a href="/demo">Demo</a>
-              <a href="/waitlist?plan=pro">Waitlist</a>
               <a href="https://github.com/getdrift/drift">GitHub</a>
               <a href="https://x.com/drift_intel">@drift_intel</a>
+              <a href="/terms">Terms</a>
+              <a href="/privacy">Privacy</a>
             </div>
           </div>
         </footer>
