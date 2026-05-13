@@ -28,6 +28,7 @@ import {
   setStripeCustomerId,
   softDeleteWorkspace,
 } from "../lib/workspace";
+import { verifyCompetitor } from "../lib/verify-competitor";
 import type { Competitor, WebhookKind, Workspace } from "../lib/types";
 
 const HELP = `drift — competitive intel CLI
@@ -102,6 +103,8 @@ async function main() {
       return cmdRemove(rest);
     case "workspace":
       return cmdWorkspace(rest);
+    case "verify":
+      return cmdVerify(rest);
     default:
       console.error(`unknown command: ${cmd}\n`);
       console.log(HELP);
@@ -422,6 +425,27 @@ async function cmdWorkspace(args: string[]) {
     default:
       die("usage: drift workspace <add|list|token|stripe-link|remove> …");
   }
+}
+
+async function cmdVerify(args: string[]) {
+  const [name, domain, ...descParts] = args;
+  const description = descParts.join(" ").trim();
+  if (!name || !domain || !description) {
+    die(
+      'usage: drift verify <name> <domain> <description>\n' +
+        '       drift verify Vercel vercel.com "Frontend hosting platform for modern web apps"',
+    );
+  }
+  console.log(`\n▸ verifying ${name} (${domain})…`);
+  console.log(`  claim: "${description}"`);
+  const verdict = await verifyCompetitor({ name, domain, description });
+  const mark = verdict.match ? "✓" : "✗";
+  const status = verdict.match ? "MATCH" : "MISMATCH";
+  console.log(`\n  ${mark} ${status}  (scraped ${verdict.scraped_chars} chars)`);
+  if (verdict.summary) console.log(`  AI summary: ${verdict.summary}`);
+  if (verdict.mismatch_reason)
+    console.log(`  reason: ${verdict.mismatch_reason}`);
+  if (verdict.error) console.log(`  error: ${verdict.error}`);
 }
 
 function printWorkspaceCreated(ws: Workspace, plainToken: string) {
