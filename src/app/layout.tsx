@@ -87,14 +87,7 @@ export default async function RootLayout({
           name: "Hosted",
           price: "19",
           priceCurrency: "USD",
-          description: "10 competitors, weekly digest across all channels. Waitlist open — launches with demand.",
-        },
-        {
-          "@type": "Offer",
-          name: "Agency",
-          price: "49",
-          priceCurrency: "USD",
-          description: "30 competitors, multiple workspaces, white-label, API access. Waitlist open.",
+          description: "10 competitors, weekly digest across all channels. 30-day money-back guarantee.",
         },
       ],
       featureList: [

@@ -47,7 +47,7 @@ export default async function Landing() {
           </a>
         </div>
         <div className="hero-trust">
-          Free to self-host · Hosted from $19/mo (waitlist) · No credit card to try
+          Free to self-host · Hosted $19/mo · 30-day money-back · No setup
         </div>
       </section>
 
@@ -160,13 +160,13 @@ export default async function Landing() {
       <section className="pricing" id="pricing">
         <h2 className="section-title">Pricing</h2>
         <p className="section-sub">
-          Self-host is free forever. Hosted plans launch once there's enough demand — join the waitlist and you'll get a heads-up before anyone else.
+          Three ways in: clone it free, subscribe to hosted, or talk to us if you need custom.
         </p>
         <div className="plans">
           <div className="plan">
             <div className="plan-name">Self-host</div>
             <div className="plan-price">$0</div>
-            <div className="plan-cadence">forever</div>
+            <div className="plan-cadence">forever, MIT</div>
             <ul className="plan-list">
               <li>Unlimited competitors</li>
               <li>Unlimited weekly digests</li>
@@ -179,38 +179,43 @@ export default async function Landing() {
             </a>
           </div>
           <div className="plan plan-featured">
-            <div className="plan-tag">coming soon</div>
+            <div className="plan-tag">most popular</div>
             <div className="plan-name">Hosted</div>
             <div className="plan-price">$19</div>
             <div className="plan-cadence">/ month</div>
             <ul className="plan-list">
-              <li>10 competitors</li>
+              <li>10 competitors, 5 sources each</li>
               <li>Weekly digest, all channels</li>
-              <li>We run the infra</li>
-              <li>No keys to manage</li>
+              <li>We run the infra on a Pi in Switzerland</li>
+              <li>30-day money-back guarantee</li>
               <li>Cancel anytime</li>
             </ul>
             <a href="/waitlist?plan=pro" className="btn btn-primary plan-cta">
               Join the waitlist
             </a>
+            <p className="plan-note">
+              Launch deal: <code>FOUNDER10</code> → $9/mo for life (first 10 customers)
+            </p>
           </div>
           <div className="plan">
-            <div className="plan-tag">coming soon</div>
             <div className="plan-name">Agency</div>
-            <div className="plan-price">$49</div>
-            <div className="plan-cadence">/ month</div>
+            <div className="plan-price">Custom</div>
+            <div className="plan-cadence">talk to us</div>
             <ul className="plan-list">
-              <li>30 competitors</li>
-              <li>Multiple workspaces</li>
-              <li>White-label deliveries</li>
+              <li>White-label briefs</li>
+              <li>Multiple client workspaces</li>
               <li>API access</li>
-              <li>Priority support</li>
+              <li>Priority email support</li>
+              <li>Built to your spec</li>
             </ul>
             <a href="/waitlist?plan=agency" className="btn btn-secondary plan-cta">
-              Join the waitlist
+              Get in touch
             </a>
           </div>
         </div>
+        <p className="section-sub" style={{ marginTop: 32, fontSize: 13, opacity: 0.7 }}>
+          Prices in USD · 30-day refund on first month · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
+        </p>
       </section>
 
       <section className="footer-cta">
@@ -219,8 +224,8 @@ export default async function Landing() {
           <a href="/brief" className="btn btn-primary">
             This week's brief
           </a>
-          <a href="/waitlist?plan=pro" className="btn btn-secondary">
-            Join the waitlist
+          <a href="/#pricing" className="btn btn-secondary">
+            See pricing
           </a>
         </div>
       </section>

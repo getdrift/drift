@@ -13,10 +13,10 @@ const PLAN_COPY: Record<
       "10 competitors, weekly digest across email + Slack + Discord + webhooks. We run the infra so you don't paste any API keys.",
   },
   agency: {
-    name: "Agency",
-    price: "$49 / month",
+    name: "Drift Agency",
+    price: "Let's talk",
     pitch:
-      "30 competitors, multiple workspaces, white-label deliveries, API access, priority support.",
+      "For PR/marketing agencies, growth consultancies, and teams managing competitor sets for multiple clients. Pricing is custom-fit. Tell us what you're tracking — we'll reply within a business day.",
   },
   other: {
     name: "Just exploring",

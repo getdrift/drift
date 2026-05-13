@@ -1192,6 +1192,29 @@ button.danger {
   text-decoration: none;
 }
 
+/* ===== Plan note (founder discount, refund, etc.) ===== */
+
+.plan-note {
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  background: rgba(94, 234, 212, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.plan-note code {
+  background: rgba(94, 234, 212, 0.18);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
 /* ===== Legal pages (ToS, Privacy) ===== */
 
 .legal-page {
