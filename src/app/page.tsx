@@ -121,8 +121,9 @@ export default async function Landing() {
           <div className="feature-icon">$</div>
           <h3>Free forever for solo</h3>
           <p>
-            Free AI inference at our scale. Vercel free hosting. Resend free emails.
-            You can run Drift without ever paying anyone.
+            Free AI inference. Self-host on any machine — Raspberry Pi, VPS,
+            Vercel free tier. Resend free emails. You can run Drift without
+            ever paying anyone.
           </p>
         </div>
       </section>

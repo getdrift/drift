@@ -63,7 +63,7 @@ export default async function PublicBrief() {
           a set of tracked competitors, then writes a brief on what changed and what
           it implies. Below is this week's output, made public. Want this for{" "}
           <em>your</em> competitor set?{" "}
-          <a href="/waitlist?plan=pro">Join the hosted waitlist ($19/mo)</a> or{" "}
+          <a href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605">Subscribe to Hosted ($19/mo)</a> or{" "}
           <a href="https://github.com/getdrift/drift">self-host it free</a>.
         </p>
       </div>
@@ -140,8 +140,11 @@ export default async function PublicBrief() {
           any machine (even a $35 Raspberry Pi), with AI inference on a free tier.
         </p>
         <div className="hero-cta" style={{ justifyContent: "center" }}>
-          <a href="/waitlist?plan=pro" className="btn btn-primary">
-            Join the waitlist
+          <a
+            href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
+            className="btn btn-primary"
+          >
+            Subscribe — $19/mo
           </a>
           <a
             href="https://github.com/getdrift/drift"

@@ -2,7 +2,7 @@
 
 Weekly competitive intel for B2B SaaS founders. You give it 3–15 competitors and the URLs you'd otherwise check yourself (pricing, changelog, jobs, blog). It scrapes them, diffs the snapshots against last week, and uses an advanced AI model to write a brief that tells you what actually moved — and what you should consider doing about it.
 
-**Zero-cost stack.** Free AI inference (Gemini 2.5 Flash's 1,500 req/day tier, no card) + Vercel free hosting + Node 24's built-in `node:sqlite`. You can run the entire thing without paying anyone. Swap the model provider via a single env var.
+**Zero-cost stack.** Free AI inference (Gemini 2.5 Flash's 1,500 req/day tier, no card) + self-host on any machine you already own — Raspberry Pi, mini PC, VPS free tier, Vercel free tier, whatever. Storage is a single SQLite file. You can run the entire thing without paying anyone. Swap the model provider via a single env var.
 
 ## What it does
 

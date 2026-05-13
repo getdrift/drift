@@ -115,8 +115,11 @@ export default async function Demo() {
       <section className="demo-cta">
         <h2>This every Monday for your industry?</h2>
         <div className="hero-cta" style={{ justifyContent: "center" }}>
-          <a href="/waitlist?plan=pro" className="btn btn-primary">
-            Join the waitlist · $19/mo
+          <a
+            href="https://buy.stripe.com/4gM9AL0HI77gauR9kIg3605"
+            className="btn btn-primary"
+          >
+            Subscribe — $19/mo
           </a>
           <a
             href="https://github.com/getdrift/drift"

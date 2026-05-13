@@ -22,13 +22,15 @@ export default async function Welcome({
     <div className="login-wrap">
       <div className="card login-card" style={{ maxWidth: 560 }}>
         <div className="hero-eyebrow" style={{ marginBottom: 16 }}>
-          ✓ subscription confirmed
+          {hasSession ? "✓ subscription confirmed" : "welcome"}
         </div>
-        <h1 className="login-title">Welcome to Drift.</h1>
+        <h1 className="login-title">
+          {hasSession ? "Welcome to Drift." : "Hi."}
+        </h1>
         <p className="login-sub">
           {hasSession
             ? "Your Drift Hosted subscription is active. Here's what happens next."
-            : "Thanks for stopping by. If you've just subscribed, your workspace setup is in motion — check your email for the login link."}
+            : "This page is the post-checkout confirmation screen. If you've just subscribed and didn't get redirected here properly, your workspace setup is still in motion — check your email for the login link."}
         </p>
 
         <div className="welcome-steps">
