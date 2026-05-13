@@ -18,11 +18,23 @@ async function main() {
   const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
   const startIso = start.toISOString();
   const endIso = end.toISOString();
+  const todayDow = end.getUTCDay();
 
   let ok = 0;
   let fail = 0;
+  let skipped = 0;
 
   for (const ws of workspaces) {
+    // Per-workspace day-of-week filter (customer picks their brief day)
+    if (ws.digest_day_of_week !== todayDow) {
+      skipped++;
+      continue;
+    }
+    if (ws.subscription_active === 0) {
+      console.log(`\n=== workspace: ${ws.slug} — SKIPPED (subscription ${ws.subscription_status}) ===`);
+      skipped++;
+      continue;
+    }
     const competitors = await listCompetitors(ws.id);
     if (competitors.length === 0) continue;
     console.log(`\n=== workspace: ${ws.slug} (${ws.plan}) — ${competitors.length} competitors ===`);
@@ -45,7 +57,9 @@ async function main() {
     }
   }
 
-  console.log(`\ndone — ${ok} ok, ${fail} failed across ${workspaces.length} workspaces`);
+  console.log(
+    `\ndone — ${ok} ok, ${fail} failed, ${skipped} skipped (not today / inactive subscription). today_dow=${todayDow}`,
+  );
   if (fail > 0) process.exit(1);
 }
 

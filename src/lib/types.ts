@@ -18,6 +18,12 @@ export interface Workspace {
   stripe_customer_id: string | null;
   competitor_limit: number;
   source_limit_per_competitor: number;
+  /** 0=Sun, 1=Mon, ..., 6=Sat. Day weekly briefs are generated + delivered. */
+  digest_day_of_week: number;
+  /** 1 if subscription is paid/current. 0 if canceled/past-due — pauses weekly cron. */
+  subscription_active: number;
+  /** Mirrors Stripe subscription status. 'active' | 'canceled' | 'past_due' | etc. */
+  subscription_status: string;
   created_at: string;
   deleted_at: string | null;
 }
@@ -27,6 +33,12 @@ export interface Competitor {
   workspace_id: number;
   name: string;
   domain: string;
+  /** Customer-provided one-line description of what this company does. Used as identity anchor. */
+  description: string;
+  /** Gemini-generated one-sentence summary based on the actual homepage content at add time. NULL = not yet verified. */
+  verified_summary: string | null;
+  /** ISO timestamp of last verification. NULL = never verified. */
+  verified_at: string | null;
   created_at: string;
 }
 

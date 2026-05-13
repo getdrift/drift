@@ -171,6 +171,68 @@ export async function regenerateToken(id: number): Promise<string> {
   return plain;
 }
 
+/** Update workspace.digest_day_of_week (0=Sun ... 6=Sat). */
+export async function setDigestDayOfWeek(
+  id: number,
+  dayOfWeek: number,
+): Promise<void> {
+  if (dayOfWeek < 0 || dayOfWeek > 6 || !Number.isInteger(dayOfWeek)) {
+    throw new Error("digest_day_of_week must be an integer 0-6");
+  }
+  const client = await db();
+  await client.execute({
+    sql: "UPDATE workspaces SET digest_day_of_week = ? WHERE id = ?",
+    args: [dayOfWeek, id],
+  });
+}
+
+/** Find workspaces by owner email — used by login-recovery flow. */
+export async function findWorkspacesByEmail(email: string): Promise<Workspace[]> {
+  const client = await db();
+  const r = await client.execute({
+    sql: "SELECT * FROM workspaces WHERE lower(owner_email) = lower(?) AND deleted_at IS NULL ORDER BY id",
+    args: [email.trim()],
+  });
+  return r.rows.map(rowToWorkspace);
+}
+
+/** Update workspace subscription state — called from Stripe webhook handler. */
+export async function setSubscriptionState(
+  id: number,
+  active: boolean,
+  status: string,
+): Promise<void> {
+  const client = await db();
+  await client.execute({
+    sql: "UPDATE workspaces SET subscription_active = ?, subscription_status = ? WHERE id = ?",
+    args: [active ? 1 : 0, status, id],
+  });
+}
+
+/** Find a workspace by its Stripe customer ID. Used by webhook handlers. */
+export async function findWorkspaceByStripeCustomerId(
+  stripeCustomerId: string,
+): Promise<Workspace | null> {
+  const client = await db();
+  const r = await client.execute({
+    sql: "SELECT * FROM workspaces WHERE stripe_customer_id = ? AND deleted_at IS NULL LIMIT 1",
+    args: [stripeCustomerId],
+  });
+  return r.rows[0] ? rowToWorkspace(r.rows[0]) : null;
+}
+
+/** Attach a Stripe customer ID to a workspace. */
+export async function setStripeCustomerId(
+  id: number,
+  stripeCustomerId: string,
+): Promise<void> {
+  const client = await db();
+  await client.execute({
+    sql: "UPDATE workspaces SET stripe_customer_id = ? WHERE id = ?",
+    args: [stripeCustomerId, id],
+  });
+}
+
 /**
  * Send the welcome email with a login URL to the workspace owner.
  *

@@ -52,11 +52,24 @@ export async function addCompetitor(
   workspaceId: number,
   name: string,
   domain: string,
+  opts: {
+    description?: string;
+    verified_summary?: string;
+  } = {},
 ): Promise<Competitor> {
   const client = await db();
+  const now = opts.verified_summary ? new Date().toISOString() : null;
   const info = await client.execute({
-    sql: "INSERT INTO competitors (workspace_id, name, domain) VALUES (?, ?, ?)",
-    args: [workspaceId, name, domain],
+    sql: `INSERT INTO competitors (workspace_id, name, domain, description, verified_summary, verified_at)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [
+      workspaceId,
+      name,
+      domain,
+      opts.description ?? "",
+      opts.verified_summary ?? null,
+      now,
+    ],
   });
   const id = Number(info.lastInsertRowid);
   const r = await client.execute({
@@ -64,6 +77,27 @@ export async function addCompetitor(
     args: [id],
   });
   return rowToObj<Competitor>(r.rows[0]);
+}
+
+export async function countCompetitors(workspaceId: number): Promise<number> {
+  const client = await db();
+  const r = await client.execute({
+    sql: "SELECT COUNT(*) AS c FROM competitors WHERE workspace_id = ?",
+    args: [workspaceId],
+  });
+  return Number((r.rows[0] as unknown as { c: number }).c);
+}
+
+export async function countSources(
+  workspaceId: number,
+  competitorId: number,
+): Promise<number> {
+  const client = await db();
+  const r = await client.execute({
+    sql: "SELECT COUNT(*) AS c FROM sources WHERE workspace_id = ? AND competitor_id = ?",
+    args: [workspaceId, competitorId],
+  });
+  return Number((r.rows[0] as unknown as { c: number }).c);
 }
 
 export async function removeCompetitor(workspaceId: number, id: number): Promise<void> {
@@ -317,6 +351,10 @@ export async function generateDigest(
     periodStart,
     periodEnd,
     pairs,
+    {
+      identitySummary: competitor.verified_summary,
+      customerDescription: competitor.description,
+    },
   );
 
   const client = await db();

@@ -30,7 +30,22 @@ const KINDS = [
 
 export const dynamic = "force-dynamic";
 
-export default async function Dashboard() {
+interface DashboardSearchParams {
+  error?: string;
+  verify_failed?: string;
+  verify_name?: string;
+  verify_domain?: string;
+  verify_description?: string;
+  verify_saw?: string;
+  verify_reason?: string;
+}
+
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams?: Promise<DashboardSearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
   const ws = await requireWorkspace();
   const workspaceId = ws.id;
   const competitors = await listCompetitors(workspaceId);
@@ -76,12 +91,75 @@ export default async function Dashboard() {
         </div>
       </section>
 
+      {params.error ? (
+        <div className="alert alert-error">
+          <strong>⚠</strong> {params.error}
+        </div>
+      ) : null}
+
+      {params.verify_failed ? (
+        <div className="alert alert-warn">
+          <div className="alert-head">
+            <strong>⚠ We couldn&apos;t verify <code>{params.verify_domain}</code></strong>
+          </div>
+          <div className="alert-grid">
+            <div>
+              <div className="alert-label">You said {params.verify_name} is</div>
+              <div className="alert-quote">&ldquo;{params.verify_description}&rdquo;</div>
+            </div>
+            <div>
+              <div className="alert-label">We saw at {params.verify_domain}</div>
+              <div className="alert-quote">
+                {params.verify_saw
+                  ? `“${params.verify_saw}”`
+                  : "(no readable content)"}
+              </div>
+            </div>
+          </div>
+          {params.verify_reason ? (
+            <p className="alert-reason">{params.verify_reason}</p>
+          ) : null}
+          <p className="alert-fix">
+            Common fixes: typo in the domain (<code>.com</code> vs <code>.app</code>?),
+            the domain redirected to an acquirer, or your description didn&apos;t match
+            the actual product. Try again with the form above.
+          </p>
+        </div>
+      ) : null}
+
       <section className="card">
         <h2 className="card-title">Add competitor</h2>
-        <form action={createCompetitorAction} className="add-form">
-          <input type="text" name="name" placeholder="Linear" required />
-          <input type="text" name="domain" placeholder="linear.app" required />
-          <button type="submit">Add</button>
+        <p className="card-sub" style={{ marginBottom: 12 }}>
+          We verify each company against its homepage before saving — protects
+          your weekly briefs from typo&apos;d domains.
+        </p>
+        <form action={createCompetitorAction} className="add-form-stacked">
+          <div className="add-form-row">
+            <input
+              type="text"
+              name="name"
+              placeholder="Linear"
+              required
+              defaultValue={params.verify_name ?? ""}
+            />
+            <input
+              type="text"
+              name="domain"
+              placeholder="linear.app"
+              required
+              defaultValue={params.verify_domain ?? ""}
+            />
+          </div>
+          <input
+            type="text"
+            name="description"
+            placeholder="Project management for product teams (one sentence)"
+            required
+            maxLength={200}
+            minLength={10}
+            defaultValue={params.verify_description ?? ""}
+          />
+          <button type="submit">Verify and add</button>
         </form>
       </section>
 
@@ -134,7 +212,17 @@ export default async function Dashboard() {
           <section key={c.id} className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">{c.name}</h2>
+                <h2 className="card-title">
+                  {c.name}
+                  {c.verified_summary ? (
+                    <span
+                      className="verified-badge"
+                      title={`Verified: ${c.verified_summary}`}
+                    >
+                      ✓ verified
+                    </span>
+                  ) : null}
+                </h2>
                 <div className="card-sub">{c.domain}</div>
               </div>
               <div className="card-header-actions">

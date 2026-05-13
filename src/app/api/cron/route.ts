@@ -32,8 +32,21 @@ export async function GET(req: Request) {
   };
   const results: Result[] = [];
 
-  const workspaces = await listWorkspaces();
-  for (const ws of workspaces) {
+  const todayDow = new Date().getUTCDay(); // 0=Sun ... 6=Sat
+  const allWorkspaces = await listWorkspaces();
+  const skipped: Array<{ workspace: string; reason: string }> = [];
+
+  for (const ws of allWorkspaces) {
+    // Per-workspace day-of-week filter — customers pick their own brief day
+    if (ws.digest_day_of_week !== todayDow) {
+      skipped.push({ workspace: ws.slug, reason: `not scheduled today (day=${ws.digest_day_of_week}, today=${todayDow})` });
+      continue;
+    }
+    // Skip inactive subscriptions — Stripe webhook flips this on cancel/payment-failure
+    if (ws.subscription_active === 0) {
+      skipped.push({ workspace: ws.slug, reason: `subscription ${ws.subscription_status}` });
+      continue;
+    }
     const competitors = await listCompetitors(ws.id);
     for (const c of competitors) {
       try {
@@ -59,7 +72,10 @@ export async function GET(req: Request) {
 
   return Response.json({
     period: { start: startIso, end: endIso },
-    workspaces: workspaces.length,
+    today_dow: todayDow,
+    workspaces_total: allWorkspaces.length,
+    workspaces_processed: allWorkspaces.length - skipped.length,
+    skipped,
     count: results.length,
     results,
   });

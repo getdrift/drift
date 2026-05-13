@@ -50,9 +50,8 @@ export default async function LoginPage({
           <div className="login-error">{params.error}</div>
         ) : null}
         <p className="login-hint">
-          Customers: lost your token? Email{" "}
-          <a href="mailto:scriptsswiss@gmail.com">scriptsswiss@gmail.com</a> — we
-          regenerate one for you instantly.
+          Lost your login URL?{" "}
+          <a href="/recover">Get a fresh one by email →</a>
         </p>
       </div>
     </div>

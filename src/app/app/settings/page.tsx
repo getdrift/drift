@@ -1,26 +1,53 @@
 import { requireWorkspace } from "@/lib/session-helpers";
 import { OWNER_WORKSPACE_ID } from "@/lib/auth";
-import { regenerateTokenAction } from "./actions";
+import { regenerateTokenAction, setDigestDayAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.PUBLIC_URL ?? "https://drift.gibbon-brill.ts.net";
 
+const DAYS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token_regen?: string }>;
+  searchParams: Promise<{
+    token_regen?: string;
+    saved?: string;
+    error?: string;
+  }>;
 }) {
   const ws = await requireWorkspace();
-  const { token_regen } = await searchParams;
+  const { token_regen, saved, error } = await searchParams;
   const isOwner = ws.id === OWNER_WORKSPACE_ID;
   const newLoginUrl = token_regen
     ? `${SITE_URL}/api/login?token=${token_regen}`
     : null;
+  const currentDay =
+    DAYS.find((d) => d.value === ws.digest_day_of_week) ?? DAYS[1];
 
   return (
     <>
       <a href="/app" className="back-link">← back to dashboard</a>
+
+      {saved === "schedule" ? (
+        <div className="alert alert-success" style={{ marginTop: 16 }}>
+          <strong>✓</strong> Schedule updated. Briefs will land on {currentDay.label}.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="alert alert-error" style={{ marginTop: 16 }}>
+          <strong>⚠</strong> {error}
+        </div>
+      ) : null}
 
       <section className="card" style={{ marginTop: 16 }}>
         <h2 className="card-title">Workspace</h2>
@@ -90,6 +117,28 @@ export default async function SettingsPage({
           </p>
         </section>
       ) : null}
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <h2 className="card-title">Brief schedule</h2>
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--text-dim)" }}>
+          Pick which day of the week your briefs are generated and delivered.
+          Currently <strong>{currentDay.label}</strong> mornings (UTC).
+        </p>
+        <form action={setDigestDayAction} className="add-form" style={{ marginTop: 12 }}>
+          <select name="day_of_week" defaultValue={ws.digest_day_of_week}>
+            {DAYS.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+          <button type="submit">Save schedule</button>
+        </form>
+        <p style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 8 }}>
+          Briefs land in the morning (UTC) of your chosen day. Custom time-zones
+          and time-of-day on the roadmap.
+        </p>
+      </section>
 
       <section className="card" style={{ marginTop: 16 }}>
         <h2 className="card-title">Access</h2>

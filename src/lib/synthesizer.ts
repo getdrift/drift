@@ -5,19 +5,29 @@ const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 const SYSTEM_PROMPT = `You are a competitive-intelligence analyst writing weekly briefs for a B2B SaaS founder.
 
-You will receive a competitor's name and a set of paired "BEFORE" / "AFTER" snapshots of pages on their site (pricing, changelog, blog, jobs, etc.) taken at two points in time.
+You will receive a competitor's name, an Identity reminder of what that company is, and a set of paired "BEFORE" / "AFTER" snapshots of pages on their site (pricing, changelog, blog, jobs, etc.) taken at two points in time.
 
 Your job: identify what actually changed and what it implies. Filter out noise (rotating testimonials, footer dates, copyright years, minor copy tweaks). Surface signal: price changes, new product lines, repositioning, hiring patterns, deprecations, new integrations, partnerships, customer logos.
 
-Rules:
-- If nothing material changed, set urgency to "low", key_changes to [], and say so in summary.
-- Be specific. "They changed pricing" is useless. "Pro tier dropped from $49 to $39/seat" is signal.
-- Each item in key_changes cites a concrete change with concrete details.
-- Each item in strategic_signals connects dots across sources.
-- Each item in recommended_actions is something the reader should consider doing this week.
-- hiring_signals is for jobs-page deltas ONLY. Extract roles posted and connect them to product direction. Examples: "3 ML engineer roles → AI features in Q3", "First DevRel hire → focus shift to developer adoption", "Sales VP in Berlin → EU expansion". If no jobs-page changes, leave as [].
-- Max 5 items per array.
-- No markdown formatting inside strings.`;
+ANTI-HALLUCINATION RULES (these protect customer trust — follow strictly):
+
+1. **Identity check FIRST.** If the AFTER snapshots no longer appear to describe the company in the Identity reminder (e.g. content is unrelated, parked-domain text, the domain redirected to a different entity, or scrape returned a 404 page), set urgency to "low", set summary to "⚠ Content at this URL no longer appears to describe [Name]. Verify the URL in your dashboard." and leave all arrays empty. Do NOT fabricate a brief about a different company.
+
+2. **Each key_change MUST cite specific evidence from the AFTER snapshot.** If you cannot point to a concrete phrase, number, or fact from the snapshot that backs the claim, OMIT the item. No vague "they're focusing more on X" without an exact quote or quoted number.
+
+3. **If nothing material changed**, set urgency to "low", key_changes to [], and say so plainly in summary ("No material changes this period — site content is stable.").
+
+4. **Be specific.** "They changed pricing" is useless. "Pro tier dropped from $49 to $39/seat" is signal. Numbers, role titles, product names, exact quotes.
+
+5. **Each item in strategic_signals connects dots across sources** AND cites which sources support it.
+
+6. **Each item in recommended_actions is something the reader should consider doing this week** — concrete, not generic.
+
+7. **hiring_signals is for jobs-page deltas ONLY.** Extract roles posted and connect them to product direction. Examples: "3 ML engineer roles → AI features in Q3", "First DevRel hire → focus shift to developer adoption". If no jobs-page changes, leave as [].
+
+8. **Max 5 items per array. No markdown formatting inside strings.**
+
+When in doubt, choose UNDER-claiming over over-claiming. A boring accurate brief is better than a confident wrong brief.`;
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -55,12 +65,20 @@ export interface SnapshotPair {
   after: string;
 }
 
+export interface SynthesizeOptions {
+  /** Identity anchor — Gemini's verified summary of who this company is, captured when the competitor was first added. Used to detect content drift. */
+  identitySummary?: string | null;
+  /** Customer's own description of the company. Secondary anchor. */
+  customerDescription?: string;
+}
+
 export async function synthesize(
   competitorName: string,
   competitorDomain: string,
   periodStart: string,
   periodEnd: string,
   pairs: SnapshotPair[],
+  options: SynthesizeOptions = {},
 ): Promise<DigestBody> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -75,6 +93,7 @@ export async function synthesize(
     periodStart,
     periodEnd,
     pairs,
+    options,
   );
 
   const isThinkingModel = /(2\.5|3\.)/.test(MODEL);
@@ -139,12 +158,29 @@ function buildUserMessage(
   start: string,
   end: string,
   pairs: SnapshotPair[],
+  options: SynthesizeOptions,
 ): string {
   const lines: string[] = [];
   lines.push(`Competitor: ${name} (${domain})`);
   lines.push(`Period: ${start} → ${end}`);
   lines.push(`Sources monitored: ${pairs.length}`);
   lines.push("");
+
+  // Identity anchor — captured at add-time, helps detect content drift.
+  if (options.identitySummary) {
+    lines.push(
+      `Identity reminder: ${name} is described as: "${options.identitySummary}"`,
+    );
+    lines.push(
+      `If the AFTER snapshots no longer describe THIS entity, refuse to synthesize a brief (see anti-hallucination rule #1).`,
+    );
+    lines.push("");
+  } else if (options.customerDescription) {
+    lines.push(
+      `Customer description: ${name} is "${options.customerDescription}" — use this as the identity anchor.`,
+    );
+    lines.push("");
+  }
 
   for (const p of pairs) {
     lines.push(`===== SOURCE: ${p.label || p.kind} (${p.kind}) =====`);

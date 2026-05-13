@@ -119,12 +119,19 @@ async function migrate(client: Client) {
   );
 
   // ---- Phase 2: ALTER TABLE for already-deployed databases ----
-  // These add workspace_id to tables that pre-date multi-tenancy.
   // Idempotent: swallows "duplicate column" errors.
   await tryAddColumn(client, "competitors", "workspace_id", "INTEGER NOT NULL DEFAULT 1");
   await tryAddColumn(client, "sources", "workspace_id", "INTEGER NOT NULL DEFAULT 1");
   await tryAddColumn(client, "digests", "workspace_id", "INTEGER NOT NULL DEFAULT 1");
   await tryAddColumn(client, "webhooks", "workspace_id", "INTEGER NOT NULL DEFAULT 1");
+
+  // Pre-launch hardening: competitor verification (identity anchor) + workspace scheduling + Stripe subscription state
+  await tryAddColumn(client, "competitors", "description", "TEXT NOT NULL DEFAULT ''");
+  await tryAddColumn(client, "competitors", "verified_summary", "TEXT");
+  await tryAddColumn(client, "competitors", "verified_at", "TEXT");
+  await tryAddColumn(client, "workspaces", "digest_day_of_week", "INTEGER NOT NULL DEFAULT 1");
+  await tryAddColumn(client, "workspaces", "subscription_active", "INTEGER NOT NULL DEFAULT 1");
+  await tryAddColumn(client, "workspaces", "subscription_status", "TEXT NOT NULL DEFAULT 'active'");
 
   // ---- Phase 3: Indexes (now safe — columns exist) ----
   await client.batch(

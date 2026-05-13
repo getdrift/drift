@@ -34,6 +34,128 @@ export async function deliver(
   return deliverHttpWebhook(webhook, competitor, digest);
 }
 
+/**
+ * Send a small test message to a freshly-added webhook to verify it works.
+ * Used by createWebhookAction immediately after saving — catches typo'd URLs
+ * before the customer's first real Monday brief.
+ */
+export async function testDelivery(webhook: Webhook): Promise<DeliveryResult> {
+  const note =
+    "✓ Drift connected. Your competitive intel briefs will land here every week. (This is a one-time test from the dashboard.)";
+
+  try {
+    if (webhook.kind === "slack") {
+      const res = await fetch(webhook.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: note }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return {
+          webhook_id: webhook.id,
+          ok: false,
+          status: res.status,
+          error: `HTTP ${res.status}: ${t.slice(0, 200)}`,
+        };
+      }
+      return { webhook_id: webhook.id, ok: true, status: res.status };
+    }
+
+    if (webhook.kind === "discord") {
+      const res = await fetch(webhook.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: note }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return {
+          webhook_id: webhook.id,
+          ok: false,
+          status: res.status,
+          error: `HTTP ${res.status}: ${t.slice(0, 200)}`,
+        };
+      }
+      return { webhook_id: webhook.id, ok: true, status: res.status };
+    }
+
+    if (webhook.kind === "generic") {
+      const res = await fetch(webhook.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "drift.test",
+          message: note,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return {
+          webhook_id: webhook.id,
+          ok: false,
+          status: res.status,
+          error: `HTTP ${res.status}: ${t.slice(0, 200)}`,
+        };
+      }
+      return { webhook_id: webhook.id, ok: true, status: res.status };
+    }
+
+    if (webhook.kind === "email") {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) {
+        return {
+          webhook_id: webhook.id,
+          ok: false,
+          status: 0,
+          error: "RESEND_API_KEY not configured — skipping test (real briefs may still fail).",
+        };
+      }
+      const from = process.env.DRIFT_EMAIL_FROM ?? "Drift <onboarding@resend.dev>";
+      const to = webhook.url.replace(/^mailto:/, "").trim();
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to,
+          subject: "✓ Drift delivery test",
+          text: note,
+          html: `<p>${note}</p>`,
+        }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        return {
+          webhook_id: webhook.id,
+          ok: false,
+          status: res.status,
+          error: `Resend ${res.status}: ${t.slice(0, 200)}`,
+        };
+      }
+      return { webhook_id: webhook.id, ok: true, status: res.status };
+    }
+
+    return {
+      webhook_id: webhook.id,
+      ok: false,
+      status: 0,
+      error: `Unknown webhook kind: ${webhook.kind}`,
+    };
+  } catch (e) {
+    return {
+      webhook_id: webhook.id,
+      ok: false,
+      status: 0,
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
+}
+
 async function deliverHttpWebhook(
   webhook: Webhook,
   competitor: Competitor,

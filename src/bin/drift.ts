@@ -25,6 +25,7 @@ import {
   listWorkspaces,
   regenerateToken,
   sendWorkspaceWelcomeEmail,
+  setStripeCustomerId,
   softDeleteWorkspace,
 } from "../lib/workspace";
 import type { Competitor, WebhookKind, Workspace } from "../lib/types";
@@ -51,9 +52,10 @@ Usage:
   drift remove source <id> [--workspace=SLUG]
   drift remove digest <id> [--workspace=SLUG]
 
-  drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--no-email]
+  drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--stripe-customer=cus_XXX] [--no-email]
   drift workspace list
-  drift workspace token <slug>   regenerate access token, prints + emails new one
+  drift workspace token <slug>           regenerate access token, prints + emails new one
+  drift workspace stripe-link <slug> <cus_XXX>   link Stripe customer ID for webhook-driven state
   drift workspace remove <slug>
 
 Source kinds: homepage, pricing, changelog, blog, docs, jobs, about, other
@@ -347,12 +349,13 @@ async function cmdWorkspace(args: string[]) {
       const positional: string[] = [];
       const flags = parseFlags(rest, positional);
       const [email] = positional;
-      if (!email) die("usage: drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--no-email]");
+      if (!email) die("usage: drift workspace add <email> [--name=NAME] [--plan=hosted|agency] [--stripe-customer=cus_XXX] [--no-email]");
       const plan = (flags.plan ?? "hosted") as "hosted" | "agency";
       const { workspace, plainToken } = await createWorkspace({
         email,
         name: flags.name,
         plan,
+        stripeCustomerId: flags["stripe-customer"] ?? null,
       });
       printWorkspaceCreated(workspace, plainToken);
 
@@ -393,6 +396,20 @@ async function cmdWorkspace(args: string[]) {
       else console.log(`\n⚠ email not sent: ${result.error ?? "skipped"}`);
       return;
     }
+    case "stripe-link": {
+      const [slug, customerId] = rest;
+      if (!slug || !customerId) die("usage: drift workspace stripe-link <slug> <cus_XXX>");
+      const ws = await findWorkspaceBySlug(slug);
+      if (!ws) die(`workspace not found: ${slug}`);
+      if (!customerId.startsWith("cus_")) {
+        die(`Stripe customer IDs start with "cus_" — got: ${customerId}`);
+      }
+      await setStripeCustomerId(ws.id, customerId);
+      console.log(`✓ linked ${ws.slug} → Stripe customer ${customerId}`);
+      console.log(`  Cancel/payment-failure events on this customer will now`);
+      console.log(`  flip ${ws.slug}'s subscription_active automatically.`);
+      return;
+    }
     case "remove": {
       const [slug] = rest;
       if (!slug) die("usage: drift workspace remove <slug>");
@@ -403,7 +420,7 @@ async function cmdWorkspace(args: string[]) {
       return;
     }
     default:
-      die("usage: drift workspace <add|list|token|remove> …");
+      die("usage: drift workspace <add|list|token|stripe-link|remove> …");
   }
 }
 
